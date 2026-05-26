@@ -1,29 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/flaviolpgjr/aletheia/backend/internal/http/routes"
 )
 
-type HealthResponse struct {
-	Status string `json:"status"`
-	App    string `json:"app"`
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	response := HealthResponse{
-		Status: "ok",
-		App:    "RealityCheck AI",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
 func main() {
-	http.HandleFunc("/health", healthHandler)
+	router := routes.NewRouter()
 
 	log.Println("API running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
