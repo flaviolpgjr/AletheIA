@@ -11,6 +11,7 @@ func NewRouter() http.Handler {
 	r := chi.NewRouter()
 
 	r.Get("/health", handlers.HealthHandler)
+	r.Post("/promises/analyze", handlers.AnalyzePromiseHandler)
 
 	return r
 }
