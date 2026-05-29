@@ -1,15 +1,19 @@
 import { AnalyzeForm } from "../components/AnalyzeForm";
+import { Header } from "../components/Header";
+import { HeroSection } from "../components/HeroSection";
 
 export function HomePage() {
   return (
-    <main>
-      <h1>AletheIA</h1>
+    <main className="min-h-screen bg-zinc-50 text-zinc-950 transition-colors dark:bg-zinc-950 dark:text-white">
+      <Header />
 
-      <p>
-        Analise promessas e identifique riscos automaticamente.
-      </p>
+      <div className="mx-auto flex max-w-4xl flex-col items-center px-6 py-14">
+        <HeroSection />
 
-      <AnalyzeForm />
+        <div className="w-full">
+          <AnalyzeForm />
+        </div>
+      </div>
     </main>
   );
 }
