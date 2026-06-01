@@ -1,10 +1,12 @@
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Info } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import logoIcon from "../assets/logo-icon.png";
 import { useAppContext } from "../hooks/useAppContext";
 
 export function Header() {
   const { theme, toggleTheme } = useAppContext();
+  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200 bg-zinc-50/80 backdrop-blur transition-colors dark:border-zinc-800 dark:bg-zinc-950/80">
@@ -20,14 +22,25 @@ export function Header() {
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="rounded-xl border border-zinc-300 p-3 text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          aria-label="Alternar tema"
-        >
-          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate("/sobre")}
+            className="rounded-xl border border-zinc-300 p-3 text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            aria-label="Sobre o projeto"
+          >
+            <Info size={20} />
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="rounded-xl border border-zinc-300 p-3 text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            aria-label="Alternar tema"
+          >
+            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+        </div>
       </div>
     </header>
   );
