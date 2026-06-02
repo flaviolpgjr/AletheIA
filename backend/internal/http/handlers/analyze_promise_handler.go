@@ -12,26 +12,38 @@ func AnalyzePromiseHandler(w http.ResponseWriter, r *http.Request) {
 	var request dto.AnalyzePromiseRequest
 
 	err := json.NewDecoder(r.Body).Decode(&request)
-
 	if err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	service := services.NewPromiseAnalyzerService()
-
 	analysis := service.Analyze(request.Text)
 
+	criteria := make([]dto.CriterionResponse, 0, len(analysis.Criteria))
+
+	for _, criterion := range analysis.Criteria {
+		criteria = append(criteria, dto.CriterionResponse{
+			Key:         criterion.Key,
+			Name:        criterion.Name,
+			Weight:      criterion.Weight,
+			Status:      string(criterion.Status),
+			Score:       criterion.Score,
+			Explanation: criterion.Explanation,
+		})
+	}
+
 	response := dto.AnalyzePromiseResponse{
-		Summary: analysis.Summary,
-		Score:   analysis.Score,
-		Risks:   analysis.Risks,
+		Summary:    analysis.Summary,
+		Score:      analysis.Score,
+		Confidence: analysis.Confidence,
+		Criteria:   criteria,
+		Risks:      analysis.Risks,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
 	err = json.NewEncoder(w).Encode(response)
-
 	if err != nil {
 		http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		return

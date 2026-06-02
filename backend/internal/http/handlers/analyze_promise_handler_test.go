@@ -38,12 +38,35 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 	var responseBody dto.AnalyzePromiseResponse
 
 	err := json.NewDecoder(response.Body).Decode(&responseBody)
-
 	if err != nil {
 		t.Errorf("failed to decode response")
 	}
 
-	if responseBody.Score != 60 {
-		t.Errorf("expected score 60, got %d", responseBody.Score)
+	if responseBody.Score != 55 {
+		t.Errorf("expected score 55, got %d", responseBody.Score)
+	}
+
+	if responseBody.Confidence != 30 {
+		t.Errorf("expected confidence 30, got %d", responseBody.Confidence)
+	}
+
+	if len(responseBody.Criteria) != 6 {
+		t.Errorf("expected 6 criteria, got %d", len(responseBody.Criteria))
+	}
+
+	if responseBody.Criteria[0].Key == "" {
+		t.Errorf("expected criterion key to be present")
+	}
+
+	if responseBody.Criteria[0].Name == "" {
+		t.Errorf("expected criterion name to be present")
+	}
+
+	if responseBody.Criteria[0].Explanation == "" {
+		t.Errorf("expected criterion explanation to be present")
+	}
+
+	if len(responseBody.Risks) == 0 {
+		t.Errorf("expected risks, got none")
 	}
 }
