@@ -8,7 +8,17 @@ import (
 	"github.com/flaviolpgjr/aletheia/backend/internal/services"
 )
 
-func AnalyzePromiseHandler(w http.ResponseWriter, r *http.Request) {
+type AnalyzePromiseHandler struct {
+	service *services.PromiseAnalyzerService
+}
+
+func NewAnalyzePromiseHandler(service *services.PromiseAnalyzerService) *AnalyzePromiseHandler {
+	return &AnalyzePromiseHandler{
+		service: service,
+	}
+}
+
+func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	var request dto.AnalyzePromiseRequest
 
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -17,8 +27,7 @@ func AnalyzePromiseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	service := services.NewPromiseAnalyzerService()
-	analysis := service.Analyze(request.Text)
+	analysis := h.service.Analyze(request.Text)
 
 	criteria := make([]dto.CriterionResponse, 0, len(analysis.Criteria))
 

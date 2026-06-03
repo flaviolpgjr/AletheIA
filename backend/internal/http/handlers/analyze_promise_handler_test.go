@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/http/dto"
+	"github.com/flaviolpgjr/aletheia/backend/internal/services"
 )
 
 func TestAnalyzePromiseHandler(t *testing.T) {
@@ -27,7 +28,10 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 
 	recorder := httptest.NewRecorder()
 
-	AnalyzePromiseHandler(recorder, request)
+	service := services.NewPromiseAnalyzerService(nil)
+	handler := NewAnalyzePromiseHandler(service)
+
+	handler.Handle(recorder, request)
 
 	response := recorder.Result()
 

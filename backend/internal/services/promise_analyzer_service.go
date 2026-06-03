@@ -4,15 +4,18 @@ import (
 	"strings"
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/domain"
+	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
 )
 
 type PromiseAnalyzerService struct {
 	scoreCalculator *ScoreCalculatorService
+	llmClient       llm.Client
 }
 
-func NewPromiseAnalyzerService() *PromiseAnalyzerService {
+func NewPromiseAnalyzerService(llmClient llm.Client) *PromiseAnalyzerService {
 	return &PromiseAnalyzerService{
 		scoreCalculator: NewScoreCalculatorService(),
+		llmClient:       llmClient,
 	}
 }
 

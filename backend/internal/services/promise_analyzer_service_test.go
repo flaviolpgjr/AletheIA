@@ -3,7 +3,7 @@ package services
 import "testing"
 
 func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
-	service := NewPromiseAnalyzerService()
+	service := NewPromiseAnalyzerService(nil)
 
 	analysis := service.Analyze("reduzir imposto sobre combustível")
 
@@ -21,7 +21,7 @@ func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
 }
 
 func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
-	service := NewPromiseAnalyzerService()
+	service := NewPromiseAnalyzerService(nil)
 
 	analysis := service.Analyze("melhorar a qualidade dos serviços públicos")
 
