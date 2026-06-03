@@ -7,7 +7,7 @@ export function ScoreCard({ score }: ScoreCardProps) {
     return (
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 text-center transition-colors dark:border-zinc-800 dark:bg-zinc-900">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-          Score de Viabilidade
+          Score AletheIA
         </h2>
 
         <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-950">
@@ -31,8 +31,12 @@ export function ScoreCard({ score }: ScoreCardProps) {
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-5 text-center transition-colors dark:border-zinc-800 dark:bg-zinc-900">
       <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-        Score de Viabilidade
+        Score AletheIA
       </h2>
+
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        Sustentação verificável da promessa
+      </p>
 
       <div className="relative mx-auto mt-6 h-28 w-56">
         <svg viewBox="0 0 200 100" className="h-full w-full">
@@ -85,7 +89,7 @@ export function ScoreCard({ score }: ScoreCardProps) {
 function getScoreStatus(score: number) {
   if (score >= 80) {
     return {
-      label: "Alta viabilidade",
+      label: "Alta sustentação",
       className:
         "border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
     };
@@ -93,14 +97,14 @@ function getScoreStatus(score: number) {
 
   if (score >= 50) {
     return {
-      label: "Viabilidade moderada",
+      label: "Sustentação moderada",
       className:
         "border border-yellow-500/30 bg-yellow-500/10 text-yellow-600 dark:text-yellow-300",
     };
   }
 
   return {
-    label: "Baixa viabilidade",
+    label: "Baixa sustentação",
     className:
       "border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-300",
   };

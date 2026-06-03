@@ -82,11 +82,29 @@ func buildCriteria(text string) []domain.Criterion {
 }
 
 func detectMeasurability(text string) domain.CriterionStatus {
-	if containsAny(text, []string{"%", "por cento", "mil", "milhão", "milhões", "reduzir", "aumentar", "construir"}) {
+	if strings.Contains(text, "%") {
 		return domain.CriterionStatusYes
 	}
 
-	return domain.CriterionStatusPartial
+	if containsAny(text, []string{"por cento", "percentual", "milhão", "milhões"}) {
+		return domain.CriterionStatusYes
+	}
+
+	if containsNumber(text) {
+		return domain.CriterionStatusYes
+	}
+
+	return domain.CriterionStatusNo
+}
+
+func containsNumber(text string) bool {
+	for _, char := range text {
+		if char >= '0' && char <= '9' {
+			return true
+		}
+	}
+
+	return false
 }
 
 func detectDeadline(text string) domain.CriterionStatus {

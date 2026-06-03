@@ -42,8 +42,8 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 		t.Errorf("failed to decode response")
 	}
 
-	if responseBody.Score != 55 {
-		t.Errorf("expected score 55, got %d", responseBody.Score)
+	if responseBody.Score != 35 {
+		t.Errorf("expected score 35, got %d", responseBody.Score)
 	}
 
 	if responseBody.Confidence != 30 {

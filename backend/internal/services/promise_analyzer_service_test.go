@@ -7,8 +7,8 @@ func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
 
 	analysis := service.Analyze("reduzir imposto sobre combustível")
 
-	if analysis.Score != 55 {
-		t.Errorf("expected score 55, got %d", analysis.Score)
+	if analysis.Score != 35 {
+		t.Errorf("expected score 35, got %d", analysis.Score)
 	}
 
 	if len(analysis.Criteria) != 6 {
@@ -25,8 +25,8 @@ func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
 
 	analysis := service.Analyze("melhorar a qualidade dos serviços públicos")
 
-	if analysis.Score != 53 {
-		t.Errorf("expected score 53, got %d", analysis.Score)
+	if analysis.Score != 43 {
+		t.Errorf("expected score 43, got %d", analysis.Score)
 	}
 
 	if len(analysis.Criteria) != 6 {
