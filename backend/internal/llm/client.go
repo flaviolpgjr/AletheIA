@@ -1,5 +1,10 @@
 package llm
 
+import "context"
+
 type Client interface {
-	ExtractPromise(text string) (*PromiseExtraction, error)
+	ExtractPromise(
+		ctx context.Context,
+		text string,
+	) (*PromiseExtraction, error)
 }
