@@ -1,8 +1,9 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export async function apiFetch<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
@@ -13,7 +14,9 @@ export async function apiFetch<T>(
   });
 
   if (!response.ok) {
-    throw new Error("Erro ao comunicar com a API");
+    const message = await response.text();
+
+    throw new Error(message || "Erro ao comunicar com a API");
   }
 
   return response.json();

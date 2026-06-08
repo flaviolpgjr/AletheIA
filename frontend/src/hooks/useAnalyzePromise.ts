@@ -20,8 +20,12 @@ export function useAnalyzePromise() {
       const response = await analyzePromise(data);
 
       setResult(response);
-    } catch {
-      setError("Não foi possível analisar a promessa.");
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Não foi possível analisar a promessa.");
+      }
     } finally {
       setLoading(false);
     }

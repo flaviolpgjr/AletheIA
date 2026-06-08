@@ -9,16 +9,22 @@ export function RiskList({ risks }: RiskListProps) {
         Riscos Identificados
       </h2>
 
-      <ul className="mt-3 space-y-2">
-        {risks.map((risk) => (
-          <li
-            key={risk}
-            className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
-          >
-            {risk}
-          </li>
-        ))}
-      </ul>
+      {risks.length === 0 ? (
+        <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+          Nenhum risco específico foi identificado nesta análise.
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {risks.map((risk) => (
+            <li
+              key={risk}
+              className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
+            >
+              {risk}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

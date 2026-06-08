@@ -5,11 +5,11 @@ import type {
   AnalyzePromiseResponse,
 } from "../types/analysis";
 
-export function analyzePromise(
-  data: AnalyzePromiseRequest
+export async function analyzePromise(
+  payload: AnalyzePromiseRequest,
 ): Promise<AnalyzePromiseResponse> {
   return apiFetch<AnalyzePromiseResponse>("/promises/analyze", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
 }
