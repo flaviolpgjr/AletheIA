@@ -56,10 +56,13 @@ func (f *fakeLLMClient) ExtractPromise(
 func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
 	service := NewPromiseAnalyzerService(&fakeLLMClient{})
 
-	analysis := service.Analyze(
+	analysis, err := service.Analyze(
 		context.Background(),
 		"reduzir imposto sobre combustível",
 	)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	if analysis.Score != 55 {
 		t.Errorf("expected score 55, got %d", analysis.Score)
@@ -85,10 +88,13 @@ func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
 func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
 	service := NewPromiseAnalyzerService(&fakeLLMClient{})
 
-	analysis := service.Analyze(
+	analysis, err := service.Analyze(
 		context.Background(),
 		"melhorar a qualidade dos serviços públicos",
 	)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	if analysis.Score != 55 {
 		t.Errorf("expected score 55, got %d", analysis.Score)

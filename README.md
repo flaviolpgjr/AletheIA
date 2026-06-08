@@ -18,6 +18,7 @@ O AletheIA é construído sobre alguns princípios fundamentais:
 - Informar o nível de confiança da análise.
 - Evitar modelos de decisão em caixa-preta.
 - Separar interpretação por IA de cálculo de score.
+- Versionar prompts, modelos e critérios de avaliação.
 
 ## Objetivo
 
@@ -72,7 +73,7 @@ Critérios iniciais do modelo v1:
 - Histórico comparável;
 - Dependências e riscos.
 
-A LLM pode interpretar a promessa e extrair informações estruturadas, mas não calcula o score nem define os pesos dos critérios.
+A LLM interpreta a promessa e extrai informações estruturadas, mas não calcula o score nem define os pesos dos critérios.
 
 ## Stack
 
@@ -92,9 +93,11 @@ A LLM pode interpretar a promessa e extrair informações estruturadas, mas não
 
 ### Inteligência Artificial
 
+- Gemini API
 - LLMs
 - Processamento de Linguagem Natural
 - Extração estruturada de informações
+- JSON Mode
 
 ### Dados
 
@@ -114,16 +117,22 @@ Implementado atualmente:
 - Health Check;
 - Estrutura HTTP com handlers, routes e services;
 - Handler de análise estruturado com injeção de dependência;
+- Interface `llm.Client` para desacoplar o provedor de LLM;
+- Integração HTTP real com Gemini;
+- Prompt estruturado para extração de promessas;
+- Resposta da LLM em JSON;
+- Parse da resposta do Gemini para `PromiseExtraction`;
+- Extração de `summary`, `category`, `goal`, `deadline`, `indicators`, `criteria` e `risks`;
+- Critérios vindos da LLM;
+- Explicações dos critérios vindas da LLM;
 - Modelo inicial de score;
-- Critérios de avaliação;
-- ScoringModelV1;
+- `ScoringModelV1`;
 - Motor de cálculo de score;
-- Confidence inicial;
+- Confidence calculada a partir dos critérios;
+- Tratamento inicial de limite temporário da API de IA;
 - DTOs de request/response;
-- Frontend consumindo score, confidence, critérios e riscos;
-- Interface inicial para integração com LLM;
-- GeminiClient estruturado;
-- API Key configurada via variável de ambiente;
+- Frontend consumindo score, confidence, critérios, riscos e resumo da análise;
+- API Key configurada via `.env`;
 - Testes automatizados.
 
 ## Arquitetura Atual
@@ -137,6 +146,16 @@ AnalyzePromiseHandler
 ↓
 PromiseAnalyzerService
 ↓
+llm.Client
+↓
+GeminiClient
+↓
+Gemini API
+↓
+PromiseExtraction
+↓
+ScoringModelV1
+↓
 ScoreCalculatorService
 ↓
 Analysis
@@ -144,15 +163,42 @@ Analysis
 AnalyzePromiseResponse
 ```
 
-Camada LLM em preparação:
+## Contrato da Extração LLM
 
-```txt
-llm.Client
-↓
-GeminiClient
-↓
-PromiseExtraction
+A LLM deve responder em JSON estruturado no formato:
+
+```json
+{
+  "summary": "string",
+  "category": "string",
+  "goal": "string",
+  "deadline": "string",
+  "indicators": ["string"],
+  "risks": ["string"],
+  "criteria": [
+    {
+      "key": "string",
+      "status": "yes|partial|no",
+      "explanation": "string"
+    }
+  ]
+}
 ```
+
+Critérios oficiais:
+
+- `clarity`
+- `measurability`
+- `deadline`
+- `public_data`
+- `historical_baseline`
+- `risks_dependencies`
+
+Status permitidos:
+
+- `yes`
+- `partial`
+- `no`
 
 ## Roadmap
 
@@ -170,7 +216,10 @@ Inclui:
 - Fontes utilizadas;
 - Limitações da análise;
 - PostgreSQL;
-- Histórico de análises.
+- Persistência das análises;
+- Campo `analysis_data` em JSONB preparado para futuro Knowledge Graph;
+- Docker;
+- Deploy.
 
 ### Release 2 — Explainability
 
@@ -204,12 +253,12 @@ Inclui:
 
 ## Próximos Passos
 
-- Implementar a primeira chamada HTTP real para a API do Gemini;
-- Utilizar o prompt de extração estruturada;
-- Converter a resposta da LLM em `PromiseExtraction`;
-- Substituir gradualmente heurísticas locais por interpretação da LLM;
-- Iniciar integração com dados públicos;
-- Persistir análises no PostgreSQL.
+- Persistir análises no PostgreSQL;
+- Criar campo `analysis_data` em JSONB contendo promessa, extração, critérios, riscos, fontes, limitações e metadados;
+- Versionar `prompt_version`, `score_model_version`, `llm_provider` e `llm_model`;
+- Iniciar integração com uma fonte pública real;
+- Adicionar Docker para backend, frontend e PostgreSQL;
+- Preparar deploy da Release 1.
 
 ## Objetivo Técnico
 

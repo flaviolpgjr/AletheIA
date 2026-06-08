@@ -5,11 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 )
 
 const geminiGenerateContentURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+
+var ErrGeminiRateLimit = errors.New("gemini rate limit exceeded, try again in a few seconds")
 
 type GeminiClient struct {
 	apiKey string
@@ -25,10 +29,35 @@ func (g *GeminiClient) ExtractPromise(
 	ctx context.Context,
 	text string,
 ) (*PromiseExtraction, error) {
+	requestBody := buildGeminiRequest(text)
 
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := g.buildHTTPRequest(ctx, jsonBody)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := executeGeminiRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	extraction, err := parseGeminiExtraction(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return extraction, nil
+}
+
+func buildGeminiRequest(text string) geminiRequest {
 	fullPrompt := PromiseExtractionPrompt + "\n\nPROMESSA:\n" + text
 
-	requestBody := geminiRequest{
+	return geminiRequest{
 		Contents: []geminiContent{
 			{
 				Parts: []geminiPart{
@@ -38,13 +67,19 @@ func (g *GeminiClient) ExtractPromise(
 				},
 			},
 		},
+		GenerationConfig: geminiGenerationConfig{
+			Temperature:      0,
+			TopP:             1,
+			TopK:             1,
+			ResponseMimeType: "application/json",
+		},
 	}
+}
 
-	jsonBody, err := json.Marshal(requestBody)
-	if err != nil {
-		return nil, err
-	}
-
+func (g *GeminiClient) buildHTTPRequest(
+	ctx context.Context,
+	jsonBody []byte,
+) (*http.Request, error) {
 	url := geminiGenerateContentURL + "?key=" + g.apiKey
 
 	req, err := http.NewRequestWithContext(
@@ -59,13 +94,14 @@ func (g *GeminiClient) ExtractPromise(
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	return req, nil
+}
 
-	resp, err := client.Do(req)
+func executeGeminiRequest(req *http.Request) ([]byte, error) {
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -73,14 +109,23 @@ func (g *GeminiClient) ExtractPromise(
 		return nil, err
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, errors.New(string(body))
+	if resp.StatusCode == http.StatusTooManyRequests {
+		log.Println("Gemini rate limit reached")
+		return nil, ErrGeminiRateLimit
 	}
 
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		log.Printf("Gemini request failed with status %d\n", resp.StatusCode)
+		return nil, fmt.Errorf("gemini request failed with status %d", resp.StatusCode)
+	}
+
+	return body, nil
+}
+
+func parseGeminiExtraction(body []byte) (*PromiseExtraction, error) {
 	var geminiResp geminiResponse
 
-	err = json.Unmarshal(body, &geminiResp)
-	if err != nil {
+	if err := json.Unmarshal(body, &geminiResp); err != nil {
 		return nil, err
 	}
 
@@ -96,8 +141,7 @@ func (g *GeminiClient) ExtractPromise(
 
 	var extraction PromiseExtraction
 
-	err = json.Unmarshal([]byte(rawText), &extraction)
-	if err != nil {
+	if err := json.Unmarshal([]byte(rawText), &extraction); err != nil {
 		return nil, err
 	}
 

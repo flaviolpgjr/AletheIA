@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/http/dto"
+	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
 	"github.com/flaviolpgjr/aletheia/backend/internal/services"
 )
 
@@ -27,7 +29,24 @@ func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	analysis := h.service.Analyze(r.Context(), request.Text)
+	analysis, err := h.service.Analyze(r.Context(), request.Text)
+	if err != nil {
+		if errors.Is(err, llm.ErrGeminiRateLimit) {
+			http.Error(
+				w,
+				"O provedor de IA atingiu o limite temporário. Tente novamente em alguns segundos.",
+				http.StatusTooManyRequests,
+			)
+			return
+		}
+
+		http.Error(
+			w,
+			"failed to analyze promise",
+			http.StatusInternalServerError,
+		)
+		return
+	}
 
 	criteria := make([]dto.CriterionResponse, 0, len(analysis.Criteria))
 

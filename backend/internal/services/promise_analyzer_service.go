@@ -23,9 +23,9 @@ func NewPromiseAnalyzerService(llmClient llm.Client) *PromiseAnalyzerService {
 func (s *PromiseAnalyzerService) Analyze(
 	ctx context.Context,
 	text string,
-) domain.Analysis {
+) (domain.Analysis, error) {
 	text = strings.TrimSpace(text)
-	
+
 	if len(text) < 15 {
 		return domain.Analysis{
 			Summary:    "Não foi possível identificar uma promessa pública clara no texto informado.",
@@ -35,7 +35,7 @@ func (s *PromiseAnalyzerService) Analyze(
 			Risks: []string{
 				"Informe uma promessa ou proposta pública mais específica.",
 			},
-		}
+		}, nil
 	}
 
 	summary := "Análise inicial baseada no modelo AletheIA v1."
@@ -47,16 +47,18 @@ func (s *PromiseAnalyzerService) Analyze(
 
 	if s.llmClient != nil {
 		llmExtraction, err := s.llmClient.ExtractPromise(ctx, text)
-		if err == nil {
-			extraction = llmExtraction
+		if err != nil {
+			return domain.Analysis{}, err
+		}
 
-			if extraction.Summary != "" {
-				summary = extraction.Summary
-			}
+		extraction = llmExtraction
 
-			if len(extraction.Risks) > 0 {
-				risks = extraction.Risks
-			}
+		if extraction.Summary != "" {
+			summary = extraction.Summary
+		}
+
+		if len(extraction.Risks) > 0 {
+			risks = extraction.Risks
 		}
 	}
 
@@ -71,7 +73,7 @@ func (s *PromiseAnalyzerService) Analyze(
 		Confidence: confidence,
 		Criteria:   criteria,
 		Risks:      risks,
-	}
+	}, nil
 }
 
 func buildCriteria(
