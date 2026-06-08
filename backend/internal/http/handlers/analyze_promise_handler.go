@@ -27,7 +27,7 @@ func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	analysis := h.service.Analyze(request.Text)
+	analysis := h.service.Analyze(r.Context(), request.Text)
 
 	criteria := make([]dto.CriterionResponse, 0, len(analysis.Criteria))
 

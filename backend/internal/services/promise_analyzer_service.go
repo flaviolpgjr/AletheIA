@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"strings"
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/domain"
@@ -19,10 +20,13 @@ func NewPromiseAnalyzerService(llmClient llm.Client) *PromiseAnalyzerService {
 	}
 }
 
-func (s *PromiseAnalyzerService) Analyze(text string) domain.Analysis {
-	normalizedText := strings.ToLower(strings.TrimSpace(text))
-
-	if len(normalizedText) < 15 {
+func (s *PromiseAnalyzerService) Analyze(
+	ctx context.Context,
+	text string,
+) domain.Analysis {
+	text = strings.TrimSpace(text)
+	
+	if len(text) < 15 {
 		return domain.Analysis{
 			Summary:    "Não foi possível identificar uma promessa pública clara no texto informado.",
 			Score:      0,
@@ -34,48 +38,58 @@ func (s *PromiseAnalyzerService) Analyze(text string) domain.Analysis {
 		}
 	}
 
-	criteria := buildCriteria(normalizedText)
+	summary := "Análise inicial baseada no modelo AletheIA v1."
+	risks := []string{
+		"Dados públicos adicionais são necessários para aprofundar a avaliação.",
+	}
+
+	var extraction *llm.PromiseExtraction
+
+	if s.llmClient != nil {
+		llmExtraction, err := s.llmClient.ExtractPromise(ctx, text)
+		if err == nil {
+			extraction = llmExtraction
+
+			if extraction.Summary != "" {
+				summary = extraction.Summary
+			}
+
+			if len(extraction.Risks) > 0 {
+				risks = extraction.Risks
+			}
+		}
+	}
+
+	criteria := buildCriteria(extraction)
 	criteria, score := s.scoreCalculator.Calculate(criteria)
 
+	confidence := calculateConfidence(criteria)
+
 	return domain.Analysis{
-		Summary:    "Análise inicial baseada no modelo AletheIA v1.",
+		Summary:    summary,
 		Score:      score,
-		Confidence: 30,
+		Confidence: confidence,
 		Criteria:   criteria,
-		Risks:      buildRisks(normalizedText),
+		Risks:      risks,
 	}
 }
 
-func buildCriteria(text string) []domain.Criterion {
+func buildCriteria(
+	extraction *llm.PromiseExtraction,
+) []domain.Criterion {
 	criteria := make([]domain.Criterion, 0, len(domain.ScoringModelV1))
 
 	for _, modelCriterion := range domain.ScoringModelV1 {
 		criterion := modelCriterion
 
-		switch criterion.Key {
-		case "clarity":
-			criterion.Status = domain.CriterionStatusYes
-			criterion.Explanation = "A promessa apresenta uma intenção pública identificável."
+		extractedCriterion := findExtractedCriterion(extraction, criterion.Key)
 
-		case "measurability":
-			criterion.Status = detectMeasurability(text)
-			criterion.Explanation = "Avalia se a promessa possui meta ou resultado mensurável."
-
-		case "deadline":
-			criterion.Status = detectDeadline(text)
-			criterion.Explanation = "Avalia se existe prazo explícito ou aproximado para execução."
-
-		case "public_data":
-			criterion.Status = domain.CriterionStatusPartial
-			criterion.Explanation = "Nesta versão inicial, ainda não há consulta real a bases públicas."
-
-		case "historical_baseline":
+		if extractedCriterion != nil {
+			criterion.Status = parseCriterionStatus(extractedCriterion.Status)
+			criterion.Explanation = extractedCriterion.Explanation
+		} else {
 			criterion.Status = domain.CriterionStatusNo
-			criterion.Explanation = "Ainda não foi consultada uma série histórica comparável."
-
-		case "risks_dependencies":
-			criterion.Status = detectRiskStatus(text)
-			criterion.Explanation = "Avalia se existem riscos ou dependências aparentes de execução."
+			criterion.Explanation = "Critério não avaliado pela LLM."
 		}
 
 		criteria = append(criteria, criterion)
@@ -84,72 +98,51 @@ func buildCriteria(text string) []domain.Criterion {
 	return criteria
 }
 
-func detectMeasurability(text string) domain.CriterionStatus {
-	if strings.Contains(text, "%") {
-		return domain.CriterionStatusYes
+func findExtractedCriterion(
+	extraction *llm.PromiseExtraction,
+	key string,
+) *llm.ExtractedCriterion {
+	if extraction == nil {
+		return nil
 	}
 
-	if containsAny(text, []string{"por cento", "percentual", "milhão", "milhões"}) {
-		return domain.CriterionStatusYes
-	}
-
-	if containsNumber(text) {
-		return domain.CriterionStatusYes
-	}
-
-	return domain.CriterionStatusNo
-}
-
-func containsNumber(text string) bool {
-	for _, char := range text {
-		if char >= '0' && char <= '9' {
-			return true
+	for _, criterion := range extraction.Criteria {
+		if criterion.Key == key {
+			return &criterion
 		}
 	}
 
-	return false
+	return nil
 }
 
-func detectDeadline(text string) domain.CriterionStatus {
-	if containsAny(text, []string{"ano", "anos", "mês", "meses", "dias", "até", "mandato"}) {
+func parseCriterionStatus(status string) domain.CriterionStatus {
+	switch status {
+	case "yes":
 		return domain.CriterionStatusYes
-	}
-
-	return domain.CriterionStatusNo
-}
-
-func detectRiskStatus(text string) domain.CriterionStatus {
-	if containsAny(text, []string{"imposto", "saúde", "educação", "segurança", "obra", "hospital", "escola"}) {
+	case "partial":
 		return domain.CriterionStatusPartial
+	case "no":
+		return domain.CriterionStatusNo
+	default:
+		return domain.CriterionStatusNo
 	}
-
-	return domain.CriterionStatusYes
 }
 
-func buildRisks(text string) []string {
-	risks := []string{}
-
-	if strings.Contains(text, "imposto") {
-		risks = append(risks, "Possível impacto na arrecadação pública.")
+func calculateConfidence(criteria []domain.Criterion) int {
+	if len(criteria) == 0 {
+		return 0
 	}
 
-	if strings.Contains(text, "saúde") || strings.Contains(text, "hospital") {
-		risks = append(risks, "Possível dependência de orçamento, equipe técnica e estrutura pública de saúde.")
-	}
+	total := 0.0
 
-	if len(risks) == 0 {
-		risks = append(risks, "Dados públicos adicionais são necessários para aprofundar a avaliação.")
-	}
-
-	return risks
-}
-
-func containsAny(text string, terms []string) bool {
-	for _, term := range terms {
-		if strings.Contains(text, term) {
-			return true
+	for _, criterion := range criteria {
+		switch criterion.Status {
+		case domain.CriterionStatusYes:
+			total += 1
+		case domain.CriterionStatusPartial:
+			total += 0.5
 		}
 	}
 
-	return false
+	return int((total / float64(len(criteria))) * 100)
 }

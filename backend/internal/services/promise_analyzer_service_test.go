@@ -1,39 +1,108 @@
 package services
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
+)
+
+type fakeLLMClient struct{}
+
+func (f *fakeLLMClient) ExtractPromise(
+	ctx context.Context,
+	text string,
+) (*llm.PromiseExtraction, error) {
+	return &llm.PromiseExtraction{
+		Summary: "Resumo gerado pela LLM.",
+		Risks: []string{
+			"Risco identificado pela LLM.",
+		},
+		Criteria: []llm.ExtractedCriterion{
+			{
+				Key:         "clarity",
+				Status:      "yes",
+				Explanation: "A promessa é clara.",
+			},
+			{
+				Key:         "measurability",
+				Status:      "yes",
+				Explanation: "A promessa é mensurável.",
+			},
+			{
+				Key:         "deadline",
+				Status:      "no",
+				Explanation: "A promessa não possui prazo.",
+			},
+			{
+				Key:         "public_data",
+				Status:      "partial",
+				Explanation: "Existem dados públicos parciais.",
+			},
+			{
+				Key:         "historical_baseline",
+				Status:      "no",
+				Explanation: "Não há histórico comparável informado.",
+			},
+			{
+				Key:         "risks_dependencies",
+				Status:      "partial",
+				Explanation: "Existem riscos ou dependências parciais.",
+			},
+		},
+	}, nil
+}
 
 func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
-	service := NewPromiseAnalyzerService(nil)
+	service := NewPromiseAnalyzerService(&fakeLLMClient{})
 
-	analysis := service.Analyze("reduzir imposto sobre combustível")
+	analysis := service.Analyze(
+		context.Background(),
+		"reduzir imposto sobre combustível",
+	)
 
-	if analysis.Score != 35 {
-		t.Errorf("expected score 35, got %d", analysis.Score)
+	if analysis.Score != 55 {
+		t.Errorf("expected score 55, got %d", analysis.Score)
+	}
+
+	if analysis.Confidence != 50 {
+		t.Errorf("expected confidence 50, got %d", analysis.Confidence)
 	}
 
 	if len(analysis.Criteria) != 6 {
 		t.Errorf("expected 6 criteria, got %d", len(analysis.Criteria))
 	}
 
-	if len(analysis.Risks) == 0 {
-		t.Errorf("expected risks, got none")
+	if analysis.Summary != "Resumo gerado pela LLM." {
+		t.Errorf("expected LLM summary, got %s", analysis.Summary)
+	}
+
+	if analysis.Risks[0] != "Risco identificado pela LLM." {
+		t.Errorf("expected LLM risk, got %s", analysis.Risks[0])
 	}
 }
 
 func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
-	service := NewPromiseAnalyzerService(nil)
+	service := NewPromiseAnalyzerService(&fakeLLMClient{})
 
-	analysis := service.Analyze("melhorar a qualidade dos serviços públicos")
+	analysis := service.Analyze(
+		context.Background(),
+		"melhorar a qualidade dos serviços públicos",
+	)
 
-	if analysis.Score != 43 {
-		t.Errorf("expected score 43, got %d", analysis.Score)
+	if analysis.Score != 55 {
+		t.Errorf("expected score 55, got %d", analysis.Score)
+	}
+
+	if analysis.Confidence != 50 {
+		t.Errorf("expected confidence 50, got %d", analysis.Confidence)
 	}
 
 	if len(analysis.Criteria) != 6 {
 		t.Errorf("expected 6 criteria, got %d", len(analysis.Criteria))
 	}
 
-	if analysis.Risks[0] != "Dados públicos adicionais são necessários para aprofundar a avaliação." {
-		t.Errorf("expected default risk, got %s", analysis.Risks[0])
+	if analysis.Risks[0] != "Risco identificado pela LLM." {
+		t.Errorf("expected LLM risk, got %s", analysis.Risks[0])
 	}
 }

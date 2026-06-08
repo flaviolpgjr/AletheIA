@@ -2,75 +2,133 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/http/dto"
+	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
 	"github.com/flaviolpgjr/aletheia/backend/internal/services"
 )
 
+type fakeLLMClient struct{}
+
+func (f *fakeLLMClient) ExtractPromise(
+	ctx context.Context,
+	text string,
+) (*llm.PromiseExtraction, error) {
+	return &llm.PromiseExtraction{
+		Summary: "Resumo gerado pela LLM.",
+		Risks: []string{
+			"Risco identificado pela LLM.",
+		},
+		Criteria: []llm.ExtractedCriterion{
+			{
+				Key:         "clarity",
+				Status:      "yes",
+				Explanation: "A promessa é clara.",
+			},
+			{
+				Key:         "measurability",
+				Status:      "yes",
+				Explanation: "A promessa é mensurável.",
+			},
+			{
+				Key:         "deadline",
+				Status:      "no",
+				Explanation: "A promessa não possui prazo.",
+			},
+			{
+				Key:         "public_data",
+				Status:      "partial",
+				Explanation: "Existem dados públicos parciais.",
+			},
+			{
+				Key:         "historical_baseline",
+				Status:      "no",
+				Explanation: "Não há histórico comparável.",
+			},
+			{
+				Key:         "risks_dependencies",
+				Status:      "partial",
+				Explanation: "Existem riscos parciais.",
+			},
+		},
+	}, nil
+}
+
 func TestAnalyzePromiseHandler(t *testing.T) {
-	requestBody := map[string]string{
-		"text": "reduzir imposto sobre combustível",
+	service := services.NewPromiseAnalyzerService(&fakeLLMClient{})
+	handler := NewAnalyzePromiseHandler(service)
+
+	requestBody := dto.AnalyzePromiseRequest{
+		Text: "reduzir imposto sobre combustível",
 	}
 
-	jsonBody, _ := json.Marshal(requestBody)
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		t.Fatalf("failed to marshal request: %v", err)
+	}
 
-	request := httptest.NewRequest(
+	req := httptest.NewRequest(
 		http.MethodPost,
 		"/promises/analyze",
-		bytes.NewBuffer(jsonBody),
+		bytes.NewBuffer(body),
 	)
-
-	request.Header.Set("Content-Type", "application/json")
 
 	recorder := httptest.NewRecorder()
 
-	service := services.NewPromiseAnalyzerService(nil)
-	handler := NewAnalyzePromiseHandler(service)
+	handler.Handle(recorder, req)
 
-	handler.Handle(recorder, request)
-
-	response := recorder.Result()
-
-	if response.StatusCode != http.StatusOK {
-		t.Errorf("expected status 200, got %d", response.StatusCode)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf(
+			"expected status %d, got %d",
+			http.StatusOK,
+			recorder.Code,
+		)
 	}
 
 	var responseBody dto.AnalyzePromiseResponse
 
-	err := json.NewDecoder(response.Body).Decode(&responseBody)
+	err = json.NewDecoder(recorder.Body).Decode(&responseBody)
 	if err != nil {
-		t.Errorf("failed to decode response")
+		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if responseBody.Score != 35 {
-		t.Errorf("expected score 35, got %d", responseBody.Score)
+	if responseBody.Score != 55 {
+		t.Errorf(
+			"expected score 55, got %d",
+			responseBody.Score,
+		)
 	}
 
-	if responseBody.Confidence != 30 {
-		t.Errorf("expected confidence 30, got %d", responseBody.Confidence)
+	if responseBody.Confidence != 50 {
+		t.Errorf(
+			"expected confidence 50, got %d",
+			responseBody.Confidence,
+		)
+	}
+
+	if responseBody.Summary != "Resumo gerado pela LLM." {
+		t.Errorf(
+			"expected summary from llm, got %s",
+			responseBody.Summary,
+		)
 	}
 
 	if len(responseBody.Criteria) != 6 {
-		t.Errorf("expected 6 criteria, got %d", len(responseBody.Criteria))
+		t.Errorf(
+			"expected 6 criteria, got %d",
+			len(responseBody.Criteria),
+		)
 	}
 
-	if responseBody.Criteria[0].Key == "" {
-		t.Errorf("expected criterion key to be present")
-	}
-
-	if responseBody.Criteria[0].Name == "" {
-		t.Errorf("expected criterion name to be present")
-	}
-
-	if responseBody.Criteria[0].Explanation == "" {
-		t.Errorf("expected criterion explanation to be present")
-	}
-
-	if len(responseBody.Risks) == 0 {
-		t.Errorf("expected risks, got none")
+	if len(responseBody.Risks) != 1 {
+		t.Errorf(
+			"expected 1 risk, got %d",
+			len(responseBody.Risks),
+		)
 	}
 }

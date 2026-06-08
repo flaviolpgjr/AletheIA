@@ -8,13 +8,19 @@ import (
 	"github.com/flaviolpgjr/aletheia/backend/internal/http/routes"
 	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
 	"github.com/flaviolpgjr/aletheia/backend/internal/services"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+
 	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
 
-	llmClient := llm.NewGeminiClient(geminiAPIKey)
+	log.Printf("GEMINI_API_KEY loaded: %v", geminiAPIKey != "")
 
+	llmClient := llm.NewGeminiClient(geminiAPIKey)
 	analyzerService := services.NewPromiseAnalyzerService(llmClient)
 
 	router := routes.NewRouter(analyzerService)
