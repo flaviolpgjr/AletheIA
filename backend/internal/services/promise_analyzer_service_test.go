@@ -96,12 +96,12 @@ func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if analysis.Score != 55 {
-		t.Errorf("expected score 55, got %d", analysis.Score)
+	if analysis.Score != 45 {
+		t.Errorf("expected score 45, got %d", analysis.Score)
 	}
 
-	if analysis.Confidence != 50 {
-		t.Errorf("expected confidence 50, got %d", analysis.Confidence)
+	if analysis.Confidence != 41 {
+		t.Errorf("expected confidence 41, got %d", analysis.Confidence)
 	}
 
 	if len(analysis.Criteria) != 6 {

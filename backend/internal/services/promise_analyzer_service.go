@@ -109,10 +109,25 @@ func buildCriteria(
 			}
 
 		case "measurability":
-			if hasMeasurement(text) {
+			if hasVagueMeasurement(text, extraction) {
+				criterion.Status = domain.CriterionStatusPartial
+				criterion.Explanation = "A promessa possui número, mas o indicador não está claramente definido ou é subjetivo."
 
+				criteria = append(criteria, criterion)
+				continue
+			}
+
+			if hasMeasurement(text) && hasIndicators(extraction) {
 				criterion.Status = domain.CriterionStatusYes
-				criterion.Explanation = "Indicador quantitativo identificado automaticamente pelo AletheIA."
+				criterion.Explanation = "Indicador quantitativo e fonte de medição identificados automaticamente pelo AletheIA."
+
+				criteria = append(criteria, criterion)
+				continue
+			}
+
+			if hasMeasurement(text) || hasIndicators(extraction) {
+				criterion.Status = domain.CriterionStatusPartial
+				criterion.Explanation = "A promessa possui algum elemento mensurável, mas ainda depende de definição mais clara do indicador."
 
 				criteria = append(criteria, criterion)
 				continue
@@ -192,4 +207,49 @@ func calculateConfidence(criteria []domain.Criterion) int {
 	}
 
 	return int((total / float64(len(criteria))) * 100)
+}
+
+func hasIndicators(extraction *llm.PromiseExtraction) bool {
+	if extraction == nil {
+		return false
+	}
+
+	return len(extraction.Indicators) > 0
+}
+
+func hasVagueMeasurement(text string, extraction *llm.PromiseExtraction) bool {
+	text = strings.ToLower(text)
+
+	vagueTerms := []string{
+		"felicidade",
+		"confiança",
+		"qualidade de vida",
+		"eficiência",
+		"prosperidade",
+		"inovação",
+		"melhorar",
+		"transformar",
+	}
+
+	for _, term := range vagueTerms {
+		if strings.Contains(text, term) {
+			return true
+		}
+	}
+
+	if extraction == nil {
+		return false
+	}
+
+	for _, indicator := range extraction.Indicators {
+		indicator = strings.ToLower(indicator)
+
+		for _, term := range vagueTerms {
+			if strings.Contains(indicator, term) {
+				return true
+			}
+		}
+	}
+
+	return false
 }

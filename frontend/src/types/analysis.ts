@@ -11,10 +11,16 @@ export type Criterion = {
   explanation: string;
 };
 
+export type PublicSource = {
+  name: string;
+  description: string;
+};
+
 export type AnalyzePromiseResponse = {
   summary: string;
   score: number;
   confidence: number;
   criteria: Criterion[];
   risks: string[];
+  sources: PublicSource[];
 };
