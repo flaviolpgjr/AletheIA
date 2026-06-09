@@ -43,6 +43,8 @@ func (s *PromiseAnalyzerService) Analyze(
 		"Dados públicos adicionais são necessários para aprofundar a avaliação.",
 	}
 
+	sources := []domain.PublicSource{}
+
 	var extraction *llm.PromiseExtraction
 
 	if s.llmClient != nil {
@@ -60,9 +62,16 @@ func (s *PromiseAnalyzerService) Analyze(
 		if len(extraction.Risks) > 0 {
 			risks = extraction.Risks
 		}
+
+		for _, source := range extraction.SuggestedSources {
+			sources = append(sources, domain.PublicSource{
+				Name:        source.Name,
+				Description: source.Description,
+			})
+		}
 	}
 
-	criteria := buildCriteria(extraction)
+	criteria := buildCriteria(text, extraction)
 	criteria, score := s.scoreCalculator.Calculate(criteria)
 
 	confidence := calculateConfidence(criteria)
@@ -73,16 +82,42 @@ func (s *PromiseAnalyzerService) Analyze(
 		Confidence: confidence,
 		Criteria:   criteria,
 		Risks:      risks,
+		Sources:    sources,
 	}, nil
 }
 
 func buildCriteria(
+	text string,
 	extraction *llm.PromiseExtraction,
 ) []domain.Criterion {
 	criteria := make([]domain.Criterion, 0, len(domain.ScoringModelV1))
 
 	for _, modelCriterion := range domain.ScoringModelV1 {
 		criterion := modelCriterion
+
+		switch criterion.Key {
+
+		case "deadline":
+			if extraction != nil &&
+				strings.TrimSpace(extraction.Deadline) != "" {
+
+				criterion.Status = domain.CriterionStatusYes
+				criterion.Explanation = "Prazo identificado automaticamente pelo AletheIA."
+
+				criteria = append(criteria, criterion)
+				continue
+			}
+
+		case "measurability":
+			if hasMeasurement(text) {
+
+				criterion.Status = domain.CriterionStatusYes
+				criterion.Explanation = "Indicador quantitativo identificado automaticamente pelo AletheIA."
+
+				criteria = append(criteria, criterion)
+				continue
+			}
+		}
 
 		extractedCriterion := findExtractedCriterion(extraction, criterion.Key)
 
@@ -98,6 +133,16 @@ func buildCriteria(
 	}
 
 	return criteria
+}
+
+func hasMeasurement(text string) bool {
+	for _, r := range text {
+		if r >= '0' && r <= '9' {
+			return true
+		}
+	}
+
+	return false
 }
 
 func findExtractedCriterion(

@@ -1,4 +1,4 @@
-package llm
+package gemini
 
 type geminiRequest struct {
 	Contents         []geminiContent         `json:"contents"`
@@ -6,9 +6,9 @@ type geminiRequest struct {
 }
 
 type geminiGenerationConfig struct {
-	Temperature float64 `json:"temperature"`
-	TopP        float64 `json:"topP"`
-	TopK        int     `json:"topK"`
+	Temperature      float64 `json:"temperature"`
+	TopP             float64 `json:"topP"`
+	TopK             int     `json:"topK"`
 	ResponseMimeType string  `json:"responseMimeType"`
 }
 

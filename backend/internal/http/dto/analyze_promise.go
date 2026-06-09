@@ -13,10 +13,16 @@ type CriterionResponse struct {
 	Explanation string  `json:"explanation"`
 }
 
+type PublicSourceResponse struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type AnalyzePromiseResponse struct {
-	Summary    string              `json:"summary"`
-	Score      int                 `json:"score"`
-	Confidence int                 `json:"confidence"`
-	Criteria   []CriterionResponse `json:"criteria"`
-	Risks      []string            `json:"risks"`
+	Summary    string                 `json:"summary"`
+	Score      int                    `json:"score"`
+	Confidence int                    `json:"confidence"`
+	Criteria   []CriterionResponse    `json:"criteria"`
+	Risks      []string               `json:"risks"`
+	Sources    []PublicSourceResponse `json:"sources"`
 }

@@ -1,5 +1,10 @@
 package llm
 
+type PublicSource struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type PromiseExtraction struct {
 	Summary    string   `json:"summary"`
 	Category   string   `json:"category"`
@@ -7,6 +12,8 @@ type PromiseExtraction struct {
 	Deadline   string   `json:"deadline"`
 	Indicators []string `json:"indicators"`
 	Risks      []string `json:"risks"`
+
+	SuggestedSources []PublicSource `json:"suggested_sources"`
 
 	Criteria []ExtractedCriterion `json:"criteria"`
 }

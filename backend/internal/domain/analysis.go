@@ -17,10 +17,16 @@ type Criterion struct {
 	Explanation string
 }
 
+type PublicSource struct {
+	Name        string
+	Description string
+}
+
 type Analysis struct {
 	Summary    string
 	Score      int
 	Confidence int
 	Criteria   []Criterion
 	Risks      []string
+	Sources    []PublicSource
 }

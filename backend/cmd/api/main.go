@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/http/routes"
-	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
+	"github.com/flaviolpgjr/aletheia/backend/internal/llmfactory"
 	"github.com/flaviolpgjr/aletheia/backend/internal/services"
 	"github.com/joho/godotenv"
 )
@@ -16,13 +16,19 @@ func main() {
 		log.Println("No .env file found")
 	}
 
-	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
+	llmClient, err := llmfactory.NewClient(llmfactory.Config{
+		Provider: os.Getenv("LLM_PROVIDER"),
 
-	log.Printf("GEMINI_API_KEY loaded: %v", geminiAPIKey != "")
+		GeminiAPIKey: os.Getenv("GEMINI_API_KEY"),
 
-	llmClient := llm.NewGeminiClient(geminiAPIKey)
+		OpenRouterAPIKey: os.Getenv("OPENROUTER_API_KEY"),
+		OpenRouterModel:  os.Getenv("OPENROUTER_MODEL"),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	analyzerService := services.NewPromiseAnalyzerService(llmClient)
-
 	router := routes.NewRouter(analyzerService)
 
 	log.Println("API running on http://localhost:8080")

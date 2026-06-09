@@ -1,10 +1,12 @@
 package llm
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+var ErrRateLimit = errors.New("llm rate limit exceeded")
 
 type Client interface {
-	ExtractPromise(
-		ctx context.Context,
-		text string,
-	) (*PromiseExtraction, error)
+	ExtractPromise(ctx context.Context, text string) (*PromiseExtraction, error)
 }

@@ -31,7 +31,7 @@ func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	analysis, err := h.service.Analyze(r.Context(), request.Text)
 	if err != nil {
-		if errors.Is(err, llm.ErrGeminiRateLimit) {
+		if errors.Is(err, llm.ErrRateLimit) {
 			http.Error(
 				w,
 				"O provedor de IA atingiu o limite temporário. Tente novamente em alguns segundos.",
@@ -61,12 +61,22 @@ func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	sources := make([]dto.PublicSourceResponse, 0, len(analysis.Sources))
+
+	for _, source := range analysis.Sources {
+		sources = append(sources, dto.PublicSourceResponse{
+			Name:        source.Name,
+			Description: source.Description,
+		})
+	}
+
 	response := dto.AnalyzePromiseResponse{
 		Summary:    analysis.Summary,
 		Score:      analysis.Score,
 		Confidence: analysis.Confidence,
 		Criteria:   criteria,
 		Risks:      analysis.Risks,
+		Sources:    sources,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -1,4 +1,4 @@
-package llm
+package gemini
 
 import (
 	"bytes"
@@ -9,15 +9,17 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
 )
 
 const geminiGenerateContentURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
-var ErrGeminiRateLimit = errors.New("gemini rate limit exceeded, try again in a few seconds")
-
 type GeminiClient struct {
 	apiKey string
 }
+
+var _ llm.Client = (*GeminiClient)(nil)
 
 func NewGeminiClient(apiKey string) *GeminiClient {
 	return &GeminiClient{
@@ -28,7 +30,7 @@ func NewGeminiClient(apiKey string) *GeminiClient {
 func (g *GeminiClient) ExtractPromise(
 	ctx context.Context,
 	text string,
-) (*PromiseExtraction, error) {
+) (*llm.PromiseExtraction, error) {
 	requestBody := buildGeminiRequest(text)
 
 	jsonBody, err := json.Marshal(requestBody)
@@ -55,7 +57,7 @@ func (g *GeminiClient) ExtractPromise(
 }
 
 func buildGeminiRequest(text string) geminiRequest {
-	fullPrompt := PromiseExtractionPrompt + "\n\nPROMESSA:\n" + text
+	fullPrompt := llm.PromiseExtractionPrompt + "\n\nPROMESSA:\n" + text
 
 	return geminiRequest{
 		Contents: []geminiContent{
@@ -111,7 +113,7 @@ func executeGeminiRequest(req *http.Request) ([]byte, error) {
 
 	if resp.StatusCode == http.StatusTooManyRequests {
 		log.Println("Gemini rate limit reached")
-		return nil, ErrGeminiRateLimit
+		return nil, llm.ErrRateLimit
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -122,7 +124,7 @@ func executeGeminiRequest(req *http.Request) ([]byte, error) {
 	return body, nil
 }
 
-func parseGeminiExtraction(body []byte) (*PromiseExtraction, error) {
+func parseGeminiExtraction(body []byte) (*llm.PromiseExtraction, error) {
 	var geminiResp geminiResponse
 
 	if err := json.Unmarshal(body, &geminiResp); err != nil {
@@ -139,7 +141,7 @@ func parseGeminiExtraction(body []byte) (*PromiseExtraction, error) {
 
 	rawText := geminiResp.Candidates[0].Content.Parts[0].Text
 
-	var extraction PromiseExtraction
+	var extraction llm.PromiseExtraction
 
 	if err := json.Unmarshal([]byte(rawText), &extraction); err != nil {
 		return nil, err
