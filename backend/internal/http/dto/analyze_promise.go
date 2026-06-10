@@ -18,6 +18,13 @@ type PublicSourceResponse struct {
 	Description string `json:"description"`
 }
 
+type EvidenceResponse struct {
+	Source      string `json:"source"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	URL         string `json:"url"`
+}
+
 type AnalyzePromiseResponse struct {
 	Summary    string                 `json:"summary"`
 	Score      int                    `json:"score"`
@@ -25,4 +32,5 @@ type AnalyzePromiseResponse struct {
 	Criteria   []CriterionResponse    `json:"criteria"`
 	Risks      []string               `json:"risks"`
 	Sources    []PublicSourceResponse `json:"sources"`
+	Evidence   []EvidenceResponse     `json:"evidence"`
 }

@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/flaviolpgjr/aletheia/backend/internal/database"
 	"github.com/flaviolpgjr/aletheia/backend/internal/http/routes"
 	"github.com/flaviolpgjr/aletheia/backend/internal/llmfactory"
+	"github.com/flaviolpgjr/aletheia/backend/internal/publicdata/health"
+	"github.com/flaviolpgjr/aletheia/backend/internal/repositories"
 	"github.com/flaviolpgjr/aletheia/backend/internal/services"
 	"github.com/joho/godotenv"
 )
@@ -15,6 +19,19 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
+
+	ctx := context.Background()
+
+	dbPool, err := database.NewPostgresPool(
+		ctx,
+		os.Getenv("DATABASE_URL"),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dbPool.Close()
+
+	analysisRepository := repositories.NewAnalysisRepository(dbPool)
 
 	llmClient, err := llmfactory.NewClient(llmfactory.Config{
 		Provider: os.Getenv("LLM_PROVIDER"),
@@ -28,7 +45,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	analyzerService := services.NewPromiseAnalyzerService(llmClient)
+	healthClient := health.NewClient()
+
+	analyzerService := services.NewPromiseAnalyzerService(
+		llmClient,
+		analysisRepository,
+		healthClient,
+	)
+
 	router := routes.NewRouter(analyzerService)
 
 	log.Println("API running on http://localhost:8080")

@@ -54,7 +54,7 @@ func (f *fakeLLMClient) ExtractPromise(
 }
 
 func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
-	service := NewPromiseAnalyzerService(&fakeLLMClient{})
+	service := NewPromiseAnalyzerService(&fakeLLMClient{}, nil, nil)
 
 	analysis, err := service.Analyze(
 		context.Background(),
@@ -86,7 +86,7 @@ func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
 }
 
 func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
-	service := NewPromiseAnalyzerService(&fakeLLMClient{})
+	service := NewPromiseAnalyzerService(&fakeLLMClient{}, nil,nil)
 
 	analysis, err := service.Analyze(
 		context.Background(),

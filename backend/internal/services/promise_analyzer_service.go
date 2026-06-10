@@ -2,21 +2,40 @@ package services
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/domain"
 	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
+	"github.com/flaviolpgjr/aletheia/backend/internal/repositories"
+	"github.com/flaviolpgjr/aletheia/backend/internal/utils"
 )
-
 type PromiseAnalyzerService struct {
-	scoreCalculator *ScoreCalculatorService
-	llmClient       llm.Client
+	scoreCalculator    *ScoreCalculatorService
+	llmClient          llm.Client
+	analysisRepository AnalysisRepository
+	publicDataProvider PublicDataProvider
 }
 
-func NewPromiseAnalyzerService(llmClient llm.Client) *PromiseAnalyzerService {
+type AnalysisRepository interface {
+	FindByHash(ctx context.Context, promiseHash string) (*domain.Analysis, error)
+	Save(ctx context.Context, promiseText string, promiseHash string, analysis domain.Analysis) error
+}
+
+type PublicDataProvider interface {
+	FindEvidence(ctx context.Context, text string) ([]domain.Evidence, error)
+}
+
+func NewPromiseAnalyzerService(
+	llmClient llm.Client,
+	analysisRepository AnalysisRepository,
+	publicDataProvider PublicDataProvider,
+) *PromiseAnalyzerService {
 	return &PromiseAnalyzerService{
-		scoreCalculator: NewScoreCalculatorService(),
-		llmClient:       llmClient,
+		scoreCalculator:     NewScoreCalculatorService(),
+		llmClient:           llmClient,
+		analysisRepository:  analysisRepository,
+		publicDataProvider:  publicDataProvider,
 	}
 }
 
@@ -36,6 +55,30 @@ func (s *PromiseAnalyzerService) Analyze(
 				"Informe uma promessa ou proposta pública mais específica.",
 			},
 		}, nil
+	}
+
+	promiseHash := utils.GeneratePromiseHash(text)
+
+	if s.analysisRepository != nil {
+		cachedAnalysis, err := s.analysisRepository.FindByHash(ctx, promiseHash)
+		if err == nil {
+			return *cachedAnalysis, nil
+		}
+
+		if !errors.Is(err, repositories.ErrAnalysisNotFound) {
+			return domain.Analysis{}, err
+		}
+	}
+
+	evidence := []domain.Evidence{}
+
+	if s.publicDataProvider != nil {
+		foundEvidence, err := s.publicDataProvider.FindEvidence(ctx, text)
+		if err != nil {
+			return domain.Analysis{}, err
+		}
+
+		evidence = foundEvidence
 	}
 
 	summary := "Análise inicial baseada no modelo AletheIA v1."
@@ -76,14 +119,23 @@ func (s *PromiseAnalyzerService) Analyze(
 
 	confidence := calculateConfidence(criteria)
 
-	return domain.Analysis{
+		analysis := domain.Analysis{
 		Summary:    summary,
 		Score:      score,
 		Confidence: confidence,
 		Criteria:   criteria,
 		Risks:      risks,
 		Sources:    sources,
-	}, nil
+		Evidence:   evidence,
+	}
+
+	if s.analysisRepository != nil {
+		if err := s.analysisRepository.Save(ctx, text, promiseHash, analysis); err != nil {
+			return domain.Analysis{}, err
+		}
+	}
+
+	return analysis, nil
 }
 
 func buildCriteria(

@@ -60,7 +60,7 @@ func (f *fakeLLMClient) ExtractPromise(
 }
 
 func TestAnalyzePromiseHandler(t *testing.T) {
-	service := services.NewPromiseAnalyzerService(&fakeLLMClient{})
+	service := services.NewPromiseAnalyzerService(&fakeLLMClient{}, nil, nil)
 	handler := NewAnalyzePromiseHandler(service)
 
 	requestBody := dto.AnalyzePromiseRequest{

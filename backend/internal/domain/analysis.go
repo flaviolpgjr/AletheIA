@@ -22,6 +22,12 @@ type PublicSource struct {
 	Description string
 }
 
+type Evidence struct {
+	Source      string
+	Title       string
+	Description string
+	URL         string
+}
 type Analysis struct {
 	Summary    string
 	Score      int
@@ -29,4 +35,5 @@ type Analysis struct {
 	Criteria   []Criterion
 	Risks      []string
 	Sources    []PublicSource
+	Evidence []Evidence
 }

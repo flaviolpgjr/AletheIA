@@ -70,6 +70,17 @@ func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	evidence := make([]dto.EvidenceResponse, 0, len(analysis.Evidence))
+
+	for _, item := range analysis.Evidence {
+		evidence = append(evidence, dto.EvidenceResponse{
+			Source:      item.Source,
+			Title:       item.Title,
+			Description: item.Description,
+			URL:         item.URL,
+		})
+	}
+
 	response := dto.AnalyzePromiseResponse{
 		Summary:    analysis.Summary,
 		Score:      analysis.Score,
@@ -77,6 +88,7 @@ func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		Criteria:   criteria,
 		Risks:      analysis.Risks,
 		Sources:    sources,
+		Evidence: 	evidence,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
