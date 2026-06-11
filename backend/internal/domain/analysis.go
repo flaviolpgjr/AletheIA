@@ -27,6 +27,11 @@ type Evidence struct {
 	Title       string
 	Description string
 	URL         string
+
+	Indicator string
+	Value     float64
+	Unit      string
+	Reference string
 }
 type Analysis struct {
 	Summary    string

@@ -114,7 +114,7 @@ func (s *PromiseAnalyzerService) Analyze(
 		}
 	}
 
-	criteria := buildCriteria(text, extraction)
+	criteria := buildCriteria(text, extraction, evidence)
 	criteria, score := s.scoreCalculator.Calculate(criteria)
 
 	confidence := calculateConfidence(criteria)
@@ -141,6 +141,7 @@ func (s *PromiseAnalyzerService) Analyze(
 func buildCriteria(
 	text string,
 	extraction *llm.PromiseExtraction,
+	evidence []domain.Evidence,
 ) []domain.Criterion {
 	criteria := make([]domain.Criterion, 0, len(domain.ScoringModelV1))
 
@@ -148,6 +149,13 @@ func buildCriteria(
 		criterion := modelCriterion
 
 		switch criterion.Key {
+
+			case "evidence_plausibility":
+				criterion.Status = evaluateEvidencePlausibility(evidence)
+				criterion.Explanation = explainEvidencePlausibility(criterion.Status)
+
+				criteria = append(criteria, criterion)
+				continue
 
 		case "deadline":
 			if extraction != nil &&
@@ -304,4 +312,29 @@ func hasVagueMeasurement(text string, extraction *llm.PromiseExtraction) bool {
 	}
 
 	return false
+}
+
+func evaluateEvidencePlausibility(evidence []domain.Evidence) domain.CriterionStatus {
+	if len(evidence) == 0 {
+		return domain.CriterionStatusNo
+	}
+
+	for _, item := range evidence {
+		if item.Value > 0 {
+			return domain.CriterionStatusPartial
+		}
+	}
+
+	return domain.CriterionStatusPartial
+}
+
+func explainEvidencePlausibility(status domain.CriterionStatus) string {
+	switch status {
+	case domain.CriterionStatusYes:
+		return "A promessa apresenta plausibilidade compatível com evidências públicas disponíveis."
+	case domain.CriterionStatusPartial:
+		return "Há evidências públicas relacionadas, mas ainda não há comparação quantitativa suficiente entre meta e linha de base."
+	default:
+		return "Não foram encontradas evidências públicas suficientes para avaliar a plausibilidade da promessa."
+	}
 }

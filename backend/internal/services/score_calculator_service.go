@@ -35,3 +35,14 @@ func statusFactor(status domain.CriterionStatus) float64 {
 		return 0
 	}
 }
+
+func evidenceScore(evidence []domain.Evidence, promiseText string) float64 {
+	for _, e := range evidence {
+		if e.Indicator == "health_facilities" && e.Value > 0 {
+			// depois vamos extrair a meta da promessa
+			return 1
+		}
+	}
+
+	return 0.5
+}

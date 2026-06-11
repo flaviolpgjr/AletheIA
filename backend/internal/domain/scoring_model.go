@@ -4,12 +4,12 @@ var ScoringModelV1 = []Criterion{
 	{
 		Key:    "clarity",
 		Name:   "Clareza da promessa",
-		Weight: 15,
+		Weight: 10,
 	},
 	{
 		Key:    "measurability",
 		Name:   "Mensurabilidade",
-		Weight: 20,
+		Weight: 15,
 	},
 	{
 		Key:    "deadline",
@@ -19,12 +19,17 @@ var ScoringModelV1 = []Criterion{
 	{
 		Key:    "public_data",
 		Name:   "Dados públicos disponíveis",
-		Weight: 25,
+		Weight: 15,
 	},
 	{
 		Key:    "historical_baseline",
 		Name:   "Histórico comparável",
 		Weight: 15,
+	},
+	{
+		Key:    "evidence_plausibility",
+		Name:   "Plausibilidade baseada em evidências públicas",
+		Weight: 20,
 	},
 	{
 		Key:    "risks_dependencies",

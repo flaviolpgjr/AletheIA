@@ -7,6 +7,8 @@ import (
 	"github.com/flaviolpgjr/aletheia/backend/internal/domain"
 )
 
+const currentHospitalBaseline = 0
+
 type Client struct{}
 
 func NewClient() *Client {
@@ -23,10 +25,15 @@ func (c *Client) FindEvidence(
 
 	return []domain.Evidence{
 		{
-			Source:      "Ministério da Saúde / CNES",
-			Title:       "Cadastro Nacional de Estabelecimentos de Saúde",
-			Description: "Base oficial utilizada para acompanhar hospitais, leitos e estabelecimentos de saúde no Brasil.",
-			URL:         "https://apidadosabertos.saude.gov.br/",
+			Source:      "Ministério da Saúde / DATASUS",
+			Title:       "Hospitais e Leitos",
+			Description: "Base pública utilizada como referência para acompanhar hospitais e leitos no Brasil, com dados relacionados ao CNES.",
+			URL:         "https://dadosabertos.saude.gov.br/dataset/hospitais-e-leitos",
+
+			Indicator: "hospital_facilities",
+			Value:     currentHospitalBaseline,
+			Unit:      "hospitais",
+			Reference: "CNES/DATASUS - Hospitais e Leitos",
 		},
 	}, nil
 }

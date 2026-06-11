@@ -4,10 +4,25 @@ import (
 	"context"
 	"testing"
 
+	"github.com/flaviolpgjr/aletheia/backend/internal/domain"
 	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
 )
 
 type fakeLLMClient struct{}
+
+type fakePublicDataProvider struct{}
+
+func (f *fakePublicDataProvider) FindEvidence(
+	ctx context.Context,
+	text string,
+) ([]domain.Evidence, error) {
+	return []domain.Evidence{
+		{
+			Indicator: "hospital_facilities",
+			Value:     1,
+		},
+	}, nil
+}
 
 func (f *fakeLLMClient) ExtractPromise(
 	ctx context.Context,
@@ -64,15 +79,15 @@ func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if analysis.Score != 55 {
-		t.Errorf("expected score 55, got %d", analysis.Score)
+	if analysis.Score != 40 {
+		t.Errorf("expected score 40, got %d", analysis.Score)
 	}
 
-	if analysis.Confidence != 50 {
-		t.Errorf("expected confidence 50, got %d", analysis.Confidence)
+	if analysis.Confidence != 42 {
+		t.Errorf("expected confidence 42, got %d", analysis.Confidence)
 	}
 
-	if len(analysis.Criteria) != 6 {
+	if len(analysis.Criteria) != 7 {
 		t.Errorf("expected 6 criteria, got %d", len(analysis.Criteria))
 	}
 
@@ -96,19 +111,54 @@ func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if analysis.Score != 45 {
+	if analysis.Score != 33 {
 		t.Errorf("expected score 45, got %d", analysis.Score)
 	}
 
-	if analysis.Confidence != 41 {
+	if analysis.Confidence != 35 {
 		t.Errorf("expected confidence 41, got %d", analysis.Confidence)
 	}
 
-	if len(analysis.Criteria) != 6 {
+	if len(analysis.Criteria) != 7 {
 		t.Errorf("expected 6 criteria, got %d", len(analysis.Criteria))
 	}
 
 	if analysis.Risks[0] != "Risco identificado pela LLM." {
 		t.Errorf("expected LLM risk, got %s", analysis.Risks[0])
+	}
+}
+
+func TestAnalyzeAddsEvidencePlausibilityCriterion(t *testing.T) {
+	service := NewPromiseAnalyzerService(
+		&fakeLLMClient{},
+		nil,
+		&fakePublicDataProvider{},
+	)
+
+	analysis, err := service.Analyze(
+		context.Background(),
+		"construir 100 hospitais",
+	)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	var found bool
+
+	for _, criterion := range analysis.Criteria {
+		if criterion.Key == "evidence_plausibility" {
+			found = true
+
+			if criterion.Status != domain.CriterionStatusPartial {
+				t.Fatalf(
+					"expected partial, got %s",
+					criterion.Status,
+				)
+			}
+		}
+	}
+
+	if !found {
+		t.Fatal("expected evidence_plausibility criterion")
 	}
 }

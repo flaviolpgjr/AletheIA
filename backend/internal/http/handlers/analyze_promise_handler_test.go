@@ -97,16 +97,16 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if responseBody.Score != 55 {
+	if responseBody.Score != 40 {
 		t.Errorf(
-			"expected score 55, got %d",
+			"expected score 40, got %d",
 			responseBody.Score,
 		)
 	}
 
-	if responseBody.Confidence != 50 {
+	if responseBody.Confidence != 42 {
 		t.Errorf(
-			"expected confidence 50, got %d",
+			"expected confidence 42, got %d",
 			responseBody.Confidence,
 		)
 	}
@@ -118,9 +118,9 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 		)
 	}
 
-	if len(responseBody.Criteria) != 6 {
+	if len(responseBody.Criteria) != 7 {
 		t.Errorf(
-			"expected 6 criteria, got %d",
+			"expected 7 criteria, got %d",
 			len(responseBody.Criteria),
 		)
 	}
