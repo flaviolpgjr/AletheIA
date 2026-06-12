@@ -17,10 +17,39 @@ Extraia:
 - categoria da promessa
 - objetivo principal
 - prazo, se houver
+- valor numérico da meta, quando existir
+- unidade da meta, quando existir
 - possíveis indicadores públicos relacionados
 - possíveis fontes públicas brasileiras que permitam verificar ou acompanhar a promessa
 - riscos e dependências relevantes da promessa
 - status dos critérios que exigem interpretação
+
+Regras para target_value e target_unit:
+
+target_value deve conter apenas o valor numérico principal da meta prometida.
+
+Exemplos:
+
+- "Construir 100 hospitais"
+  → target_value: 100
+  → target_unit: "hospitais"
+
+- "Construir 1 milhão de hospitais"
+  → target_value: 1000000
+  → target_unit: "hospitais"
+
+- "Criar 500 mil empregos"
+  → target_value: 500000
+  → target_unit: "empregos"
+
+- "Reduzir a inflação para 3%"
+  → target_value: 3
+  → target_unit: "%"
+
+Quando não houver meta numérica explícita:
+
+- target_value deve ser 0
+- target_unit deve ser ""
 
 Critérios avaliados pela IA:
 
@@ -142,6 +171,8 @@ Responda SOMENTE com JSON válido seguindo exatamente esta estrutura:
   "category": "string",
   "goal": "string",
   "deadline": "string",
+  "target_value": 0,
+  "target_unit": "",
   "indicators": ["string"],
   "risks": ["string"],
   "suggested_sources": [

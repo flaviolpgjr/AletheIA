@@ -78,6 +78,10 @@ func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 			Title:       item.Title,
 			Description: item.Description,
 			URL:         item.URL,
+			Indicator:   item.Indicator,
+			Value:       item.Value,
+			Unit:        item.Unit,
+			Reference:   item.Reference,
 		})
 	}
 
@@ -85,6 +89,8 @@ func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		Summary:    analysis.Summary,
 		Score:      analysis.Score,
 		Confidence: analysis.Confidence,
+		TargetValue: analysis.TargetValue,
+		TargetUnit:  analysis.TargetUnit,
 		Criteria:   criteria,
 		Risks:      analysis.Risks,
 		Sources:    sources,

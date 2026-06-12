@@ -30,6 +30,8 @@ func (f *fakeLLMClient) ExtractPromise(
 ) (*llm.PromiseExtraction, error) {
 	return &llm.PromiseExtraction{
 		Summary: "Resumo gerado pela LLM.",
+		TargetValue: 100,
+		TargetUnit:  "hospitais",
 		Risks: []string{
 			"Risco identificado pela LLM.",
 		},
@@ -88,7 +90,7 @@ func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
 	}
 
 	if len(analysis.Criteria) != 7 {
-		t.Errorf("expected 6 criteria, got %d", len(analysis.Criteria))
+		t.Errorf("expected 7 criteria, got %d", len(analysis.Criteria))
 	}
 
 	if analysis.Summary != "Resumo gerado pela LLM." {
@@ -112,15 +114,15 @@ func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
 	}
 
 	if analysis.Score != 33 {
-		t.Errorf("expected score 45, got %d", analysis.Score)
+		t.Errorf("expected score 33, got %d", analysis.Score)
 	}
 
 	if analysis.Confidence != 35 {
-		t.Errorf("expected confidence 41, got %d", analysis.Confidence)
+		t.Errorf("expected confidence 35, got %d", analysis.Confidence)
 	}
 
 	if len(analysis.Criteria) != 7 {
-		t.Errorf("expected 6 criteria, got %d", len(analysis.Criteria))
+		t.Errorf("expected 7 criteria, got %d", len(analysis.Criteria))
 	}
 
 	if analysis.Risks[0] != "Risco identificado pela LLM." {
@@ -160,5 +162,25 @@ func TestAnalyzeAddsEvidencePlausibilityCriterion(t *testing.T) {
 
 	if !found {
 		t.Fatal("expected evidence_plausibility criterion")
+	}
+}
+
+func TestAnalyzeIncludesExtractedTarget(t *testing.T) {
+	service := NewPromiseAnalyzerService(&fakeLLMClient{}, nil, nil)
+
+	analysis, err := service.Analyze(
+		context.Background(),
+		"construir 100 hospitais",
+	)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if analysis.TargetValue != 100 {
+		t.Errorf("expected target value 100, got %f", analysis.TargetValue)
+	}
+
+	if analysis.TargetUnit != "hospitais" {
+		t.Errorf("expected target unit hospitais, got %s", analysis.TargetUnit)
 	}
 }

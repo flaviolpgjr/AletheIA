@@ -19,18 +19,27 @@ type PublicSourceResponse struct {
 }
 
 type EvidenceResponse struct {
-	Source      string `json:"source"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	URL         string `json:"url"`
+	Source      string  `json:"source"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	URL         string  `json:"url"`
+
+	Indicator   string  `json:"indicator"`
+	Value       float64 `json:"value"`
+	Unit        string  `json:"unit"`
+	Reference   string  `json:"reference"`
 }
 
 type AnalyzePromiseResponse struct {
-	Summary    string                 `json:"summary"`
-	Score      int                    `json:"score"`
-	Confidence int                    `json:"confidence"`
-	Criteria   []CriterionResponse    `json:"criteria"`
-	Risks      []string               `json:"risks"`
-	Sources    []PublicSourceResponse `json:"sources"`
-	Evidence   []EvidenceResponse     `json:"evidence"`
+	Summary     string                 `json:"summary"`
+	Score       int                    `json:"score"`
+	Confidence  int                    `json:"confidence"`
+
+	TargetValue float64                `json:"target_value"`
+	TargetUnit  string                 `json:"target_unit"`
+
+	Criteria []CriterionResponse       `json:"criteria"`
+	Risks    []string                  `json:"risks"`
+	Sources  []PublicSourceResponse    `json:"sources"`
+	Evidence []EvidenceResponse        `json:"evidence"`
 }

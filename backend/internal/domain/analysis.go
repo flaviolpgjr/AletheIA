@@ -34,11 +34,14 @@ type Evidence struct {
 	Reference string
 }
 type Analysis struct {
-	Summary    string
-	Score      int
-	Confidence int
-	Criteria   []Criterion
-	Risks      []string
-	Sources    []PublicSource
+	Summary     string
+	Score       int
+	Confidence  int
+	TargetValue float64
+	TargetUnit  string
+
+	Criteria []Criterion
+	Risks    []string
+	Sources  []PublicSource
 	Evidence []Evidence
 }

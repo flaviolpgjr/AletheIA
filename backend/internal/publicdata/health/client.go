@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/domain"
@@ -9,7 +10,10 @@ import (
 
 const currentHospitalBaseline = 0
 
-type Client struct{}
+type Client struct {
+	httpClient *http.Client
+	baseURL    string
+}
 
 func NewClient() *Client {
 	return &Client{}

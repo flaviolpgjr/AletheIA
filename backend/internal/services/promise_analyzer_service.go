@@ -119,10 +119,20 @@ func (s *PromiseAnalyzerService) Analyze(
 
 	confidence := calculateConfidence(criteria)
 
-		analysis := domain.Analysis{
+	targetValue := 0.0
+	targetUnit := ""
+
+	if extraction != nil {
+		targetValue = extraction.TargetValue
+		targetUnit = extraction.TargetUnit
+	}
+
+	analysis := domain.Analysis{
 		Summary:    summary,
 		Score:      score,
 		Confidence: confidence,
+		TargetValue: targetValue,
+		TargetUnit:  targetUnit,
 		Criteria:   criteria,
 		Risks:      risks,
 		Sources:    sources,

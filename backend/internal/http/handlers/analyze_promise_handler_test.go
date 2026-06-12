@@ -21,6 +21,8 @@ func (f *fakeLLMClient) ExtractPromise(
 ) (*llm.PromiseExtraction, error) {
 	return &llm.PromiseExtraction{
 		Summary: "Resumo gerado pela LLM.",
+		TargetValue: 100,
+		TargetUnit:  "hospitais",
 		Risks: []string{
 			"Risco identificado pela LLM.",
 		},
@@ -116,6 +118,28 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 			"expected summary from llm, got %s",
 			responseBody.Summary,
 		)
+	}
+
+	if responseBody.TargetValue != 100 {
+		t.Errorf(
+			"expected target value 100, got %f",
+			responseBody.TargetValue,
+		)
+	}
+
+	if responseBody.TargetUnit != "hospitais" {
+		t.Errorf(
+			"expected target unit hospitais, got %s",
+			responseBody.TargetUnit,
+		)
+	}
+
+	if responseBody.TargetValue == 0 {
+		t.Fatal("expected target value to be exposed in response")
+	}
+
+	if responseBody.TargetUnit == "" {
+		t.Fatal("expected target unit to be exposed in response")
 	}
 
 	if len(responseBody.Criteria) != 7 {

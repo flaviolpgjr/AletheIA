@@ -10,6 +10,10 @@ type PromiseExtraction struct {
 	Category   string   `json:"category"`
 	Goal       string   `json:"goal"`
 	Deadline   string   `json:"deadline"`
+
+	TargetValue float64 `json:"target_value"`
+	TargetUnit  string  `json:"target_unit"`
+
 	Indicators []string `json:"indicators"`
 	Risks      []string `json:"risks"`
 
