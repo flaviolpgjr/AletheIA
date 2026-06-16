@@ -46,6 +46,25 @@ func NewClient() *Client {
 	}
 }
 
+func (c *Client) FetchHospitalFacilitiesBaseline(
+	ctx context.Context,
+) (domain.PublicDataBaseline, error) {
+	totalHospitals, err := c.fetchHospitalsCount(ctx)
+	if err != nil {
+		return domain.PublicDataBaseline{}, err
+	}
+
+	return domain.PublicDataBaseline{
+		Indicator:   "hospital_facilities",
+		Scope:       "BR",
+		Value:       float64(totalHospitals),
+		Unit:        "hospitais",
+		Source:      "DATASUS",
+		Reference:   "CNES/DATASUS - Hospitais e Leitos",
+		CollectedAt: time.Now(),
+	}, nil
+}
+
 func (c *Client) FindEvidence(
 	ctx context.Context,
 	text string,
