@@ -48,6 +48,7 @@ func (r *PublicDataBaselineRepository) FindByIndicatorAndScope(
 		FROM public_data_baselines
 		WHERE indicator = $1
 		AND scope = $2
+		ORDER BY collected_at DESC
 		LIMIT 1
 		`,
 		indicator,

@@ -27,14 +27,15 @@ func main() {
 	}
 	defer dbPool.Close()
 
-	healthClient := health.NewClient()
+	
+	repository := repositories.NewPublicDataBaselineRepository(dbPool)
+
+	healthClient := health.NewClient(repository)
 
 	baseline, err := healthClient.FetchHospitalFacilitiesBaseline(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	repository := repositories.NewPublicDataBaselineRepository(dbPool)
 
 	if err := repository.Save(ctx, baseline); err != nil {
 		log.Fatal(err)

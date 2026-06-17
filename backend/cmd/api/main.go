@@ -32,6 +32,7 @@ func main() {
 	defer dbPool.Close()
 
 	analysisRepository := repositories.NewAnalysisRepository(dbPool)
+	publicDataBaselineRepository := repositories.NewPublicDataBaselineRepository(dbPool)
 
 	llmClient, err := llmfactory.NewClient(llmfactory.Config{
 		Provider: os.Getenv("LLM_PROVIDER"),
@@ -45,7 +46,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	healthClient := health.NewClient()
+	healthClient := health.NewClient(
+		publicDataBaselineRepository,
+	)
 
 	analyzerService := services.NewPromiseAnalyzerService(
 		llmClient,

@@ -15,41 +15,61 @@ import (
 const (
 	defaultBaseURL = "https://apidadosabertos.saude.gov.br"
 	cacheTTL       = 24 * time.Hour
+	defaultLimit   = 20
+	maxPages       = 500
+
+	activeStatus = 1
 )
+
+var hospitalUnitTypeCodes = []int{5, 7}
 
 type Client struct {
 	httpClient *http.Client
 	baseURL    string
+
+	baselineRepository BaselineRepository
 
 	cacheMu       sync.Mutex
 	baselineValue int
 	baselineUntil time.Time
 }
 
-type hospitalsAndBedsResponse struct {
-	Hospitals []hospitalAndBedsItem `json:"hospitais_leitos"`
+type cnesEstablishmentsResponse struct {
+	Establishments []cnesEstablishmentItem `json:"estabelecimentos"`
 }
 
-type hospitalAndBedsItem struct {
-	HospitalName string `json:"nome_do_hospital"`
-	State        string `json:"unidade_da_federacao_onde_fica_o_hospital"`
-	City         string `json:"nome_do_municipio_onde_fica_o_hospital"`
-	UnitType    string `json:"descricao_do_tipo_da_unidade"`
+type cnesEstablishmentItem struct {
+	CNESCode      int  `json:"codigo_cnes"`
+	UnitTypeCode  int  `json:"codigo_tipo_unidade"`
+	StateCode     int  `json:"codigo_uf"`
+	CityCode      int  `json:"codigo_municipio"`
+	DisableReason *int `json:"codigo_motivo_desabilitacao_estabelecimento"`
 }
 
-func NewClient() *Client {
+type BaselineRepository interface {
+	FindByIndicatorAndScope(
+		ctx context.Context,
+		indicator string,
+		scope string,
+	) (*domain.PublicDataBaseline, error)
+}
+
+func NewClient(
+	baselineRepository BaselineRepository,
+) *Client {
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: 20 * time.Second,
 		},
-		baseURL: defaultBaseURL,
+		baseURL:            defaultBaseURL,
+		baselineRepository: baselineRepository,
 	}
 }
 
 func (c *Client) FetchHospitalFacilitiesBaseline(
 	ctx context.Context,
 ) (domain.PublicDataBaseline, error) {
-	totalHospitals, err := c.fetchHospitalsCount(ctx)
+	totalHospitals, err := c.fetchHospitalFacilitiesCount(ctx)
 	if err != nil {
 		return domain.PublicDataBaseline{}, err
 	}
@@ -59,8 +79,8 @@ func (c *Client) FetchHospitalFacilitiesBaseline(
 		Scope:       "BR",
 		Value:       float64(totalHospitals),
 		Unit:        "hospitais",
-		Source:      "DATASUS",
-		Reference:   "CNES/DATASUS - Hospitais e Leitos",
+		Source:      "DATASUS/CNES",
+		Reference:   "CNES - Estabelecimentos de Saúde: codigo_tipo_unidade IN (5, 7), status=1",
 		CollectedAt: time.Now(),
 	}, nil
 }
@@ -73,7 +93,11 @@ func (c *Client) FindEvidence(
 		return []domain.Evidence{}, nil
 	}
 
-	totalHospitals, err := c.fetchHospitalsCount(ctx)
+	baseline, err := c.baselineRepository.FindByIndicatorAndScope(
+		ctx,
+		"hospital_facilities",
+		"BR",
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -81,24 +105,24 @@ func (c *Client) FindEvidence(
 	return []domain.Evidence{
 		{
 			Source:      "Ministério da Saúde / DATASUS",
-			Title:       "Hospitais e Leitos",
-			Description: "Base pública utilizada como referência para acompanhar hospitais e leitos no Brasil, com dados relacionados ao CNES.",
-			URL:         "https://apidadosabertos.saude.gov.br/assistencia-a-saude/hospitais-e-leitos",
+			Title:       "CNES - Estabelecimentos de Saúde",
+			Description: "Cadastro Nacional de Estabelecimentos de Saúde usado como referência para contar hospitais gerais e especializados ativos no Brasil.",
+			URL:         "https://apidadosabertos.saude.gov.br/cnes/estabelecimentos",
 
-			Indicator: "hospital_facilities",
-			Value:     float64(totalHospitals),
-			Unit:      "hospitais",
-			Reference: "CNES/DATASUS - Hospitais e Leitos",
+			Indicator: baseline.Indicator,
+			Value:     baseline.Value,
+			Unit:      baseline.Unit,
+			Reference: baseline.Reference,
 		},
 	}, nil
 }
 
-func (c *Client) fetchHospitalsCount(ctx context.Context) (int, error) {
+func (c *Client) fetchHospitalFacilitiesCount(ctx context.Context) (int, error) {
 	if value, ok := c.getCachedBaseline(); ok {
 		return value, nil
 	}
 
-	total, err := c.fetchHospitalsCountFromAPI(ctx)
+	total, err := c.fetchHospitalFacilitiesCountFromAPI(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -108,74 +132,51 @@ func (c *Client) fetchHospitalsCount(ctx context.Context) (int, error) {
 	return total, nil
 }
 
-func (c *Client) fetchHospitalsCountFromAPI(ctx context.Context) (int, error) {
-	exists, err := c.hospitalExistsAtOffset(ctx, 0)
-	if err != nil {
-		return 0, err
-	}
+func (c *Client) fetchHospitalFacilitiesCountFromAPI(ctx context.Context) (int, error) {
+	uniqueHospitals := make(map[int]struct{})
 
-	if !exists {
-		return 0, nil
-	}
+	for _, unitTypeCode := range hospitalUnitTypeCodes {
+		for page := 0; page < maxPages; page++ {
+			offset := page * defaultLimit
 
-	low := 0
-	high := 1
+			items, err := c.fetchCNESEstablishmentsPage(
+				ctx,
+				unitTypeCode,
+				defaultLimit,
+				offset,
+			)
+			if err != nil {
+				return 0, err
+			}
 
-	for {
-		exists, err := c.hospitalExistsAtOffset(ctx, high)
-		if err != nil {
-			return 0, err
-		}
+			for _, item := range items {
+				if !isValidHospitalFacility(item, unitTypeCode) {
+					continue
+				}
 
-		if !exists {
-			break
-		}
+				uniqueHospitals[item.CNESCode] = struct{}{}
+			}
 
-		low = high
-		high *= 2
-	}
-
-	left := low + 1
-	right := high
-
-	for left < right {
-		mid := left + (right-left)/2
-
-		exists, err := c.hospitalExistsAtOffset(ctx, mid)
-		if err != nil {
-			return 0, err
-		}
-
-		if exists {
-			left = mid + 1
-		} else {
-			right = mid
+			if len(items) == 0 {
+				break
+			}
 		}
 	}
 
-	return left, nil
+	return len(uniqueHospitals), nil
 }
 
-func (c *Client) hospitalExistsAtOffset(
+func (c *Client) fetchCNESEstablishmentsPage(
 	ctx context.Context,
-	offset int,
-) (bool, error) {
-	items, err := c.fetchHospitalsPage(ctx, 1, offset)
-	if err != nil {
-		return false, err
-	}
-
-	return len(items) > 0, nil
-}
-
-func (c *Client) fetchHospitalsPage(
-	ctx context.Context,
+	unitTypeCode int,
 	limit int,
 	offset int,
-) ([]hospitalAndBedsItem, error) {
+) ([]cnesEstablishmentItem, error) {
 	url := fmt.Sprintf(
-		"%s/assistencia-a-saude/hospitais-e-leitos?limit=%d&offset=%d",
+		"%s/cnes/estabelecimentos?codigo_tipo_unidade=%d&status=%d&limit=%d&offset=%d",
 		c.baseURL,
+		unitTypeCode,
+		activeStatus,
 		limit,
 		offset,
 	)
@@ -194,16 +195,38 @@ func (c *Client) fetchHospitalsPage(
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("health public data request failed with status %d", resp.StatusCode)
+		return nil, fmt.Errorf(
+			"health public data request failed with status %d",
+			resp.StatusCode,
+		)
 	}
 
-	var result hospitalsAndBedsResponse
+	var result cnesEstablishmentsResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 
-	return result.Hospitals, nil
+	return result.Establishments, nil
+}
+
+func isValidHospitalFacility(
+	item cnesEstablishmentItem,
+	expectedUnitTypeCode int,
+) bool {
+	if item.CNESCode == 0 {
+		return false
+	}
+
+	if item.UnitTypeCode != expectedUnitTypeCode {
+		return false
+	}
+
+	if item.DisableReason != nil {
+		return false
+	}
+
+	return true
 }
 
 func (c *Client) getCachedBaseline() (int, bool) {
