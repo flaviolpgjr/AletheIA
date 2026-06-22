@@ -19,7 +19,9 @@ func (f *fakePublicDataProvider) FindEvidence(
 	return []domain.Evidence{
 		{
 			Indicator: "hospital_facilities",
-			Value:     1,
+			Value:     5115,
+			Unit:      "hospitais",
+			Reference: "CNES - Estabelecimentos de Saúde: codigo_tipo_unidade IN (5, 7), status=1",
 		},
 	}, nil
 }
@@ -29,7 +31,7 @@ func (f *fakeLLMClient) ExtractPromise(
 	text string,
 ) (*llm.PromiseExtraction, error) {
 	return &llm.PromiseExtraction{
-		Summary: "Resumo gerado pela LLM.",
+		Summary:     "Resumo gerado pela LLM.",
 		TargetValue: 100,
 		TargetUnit:  "hospitais",
 		Risks: []string{
@@ -103,7 +105,7 @@ func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
 }
 
 func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
-	service := NewPromiseAnalyzerService(&fakeLLMClient{}, nil,nil)
+	service := NewPromiseAnalyzerService(&fakeLLMClient{}, nil, nil)
 
 	analysis, err := service.Analyze(
 		context.Background(),
@@ -151,9 +153,9 @@ func TestAnalyzeAddsEvidencePlausibilityCriterion(t *testing.T) {
 		if criterion.Key == "evidence_plausibility" {
 			found = true
 
-			if criterion.Status != domain.CriterionStatusPartial {
+			if criterion.Status != domain.CriterionStatusYes {
 				t.Fatalf(
-					"expected partial, got %s",
+					"expected yes, got %s",
 					criterion.Status,
 				)
 			}

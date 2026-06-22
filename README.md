@@ -109,31 +109,83 @@ A LLM interpreta a promessa e extrai informações estruturadas, mas não calcul
 
 ## Status Atual
 
-Em desenvolvimento.
+Em desenvolvimento (Release 1).
 
 Implementado atualmente:
+
+### Backend
 
 - API REST em Go;
 - Health Check;
 - Estrutura HTTP com handlers, routes e services;
-- Handler de análise estruturado com injeção de dependência;
-- Interface `llm.Client` para desacoplar o provedor de LLM;
-- Integração HTTP real com Gemini;
+- Injeção de dependências;
+- Repository Pattern;
+- Persistência em PostgreSQL;
+- Cache de análises por hash da promessa;
+- Histórico de análises persistido em banco de dados;
+- DTOs de request/response;
+- Testes automatizados.
+
+### Inteligência Artificial
+
+- Interface `llm.Client` para desacoplar provedores de IA;
+- Integração com Gemini e OpenRouter;
 - Prompt estruturado para extração de promessas;
 - Resposta da LLM em JSON;
-- Parse da resposta do Gemini para `PromiseExtraction`;
-- Extração de `summary`, `category`, `goal`, `deadline`, `indicators`, `criteria` e `risks`;
-- Critérios vindos da LLM;
-- Explicações dos critérios vindas da LLM;
-- Modelo inicial de score;
+- Parse para `PromiseExtraction`;
+- Extração de:
+  - resumo;
+  - categoria;
+  - objetivo;
+  - prazo;
+  - indicadores;
+  - valor alvo (`target_value`);
+  - unidade alvo (`target_unit`);
+  - critérios;
+  - riscos;
+  - fontes sugeridas;
+
+- Critérios avaliados pela LLM;
+- Explicações dos critérios geradas pela LLM;
+- Riscos extraídos pela LLM.
+
+### Score e Metodologia
+
 - `ScoringModelV1`;
 - Motor de cálculo de score;
 - Confidence calculada a partir dos critérios;
-- Tratamento inicial de limite temporário da API de IA;
-- DTOs de request/response;
-- Frontend consumindo score, confidence, critérios, riscos e resumo da análise;
-- API Key configurada via `.env`;
-- Testes automatizados.
+- Critérios ponderados por peso;
+- Metodologia documentada em `docs/methodology.md`;
+- Critério de plausibilidade baseado em evidências públicas;
+- Comparação automática entre meta e linha de base pública;
+- Explicação quantitativa da plausibilidade.
+
+### Dados Públicos
+
+- Integração com CNES/DATASUS;
+- Coleta automática de baseline público;
+- Persistência de baselines em PostgreSQL;
+- Evidências públicas incorporadas à análise;
+- Contagem nacional de hospitais ativos utilizando dados oficiais do CNES;
+- Sistema preparado para múltiplos provedores de dados públicos.
+
+### Frontend
+
+- React + TypeScript;
+- Consumo da API de análise;
+- Exibição de:
+  - score;
+  - confidence;
+  - resumo;
+  - critérios;
+  - riscos;
+  - fontes;
+  - evidências públicas;
+
+- Interface dark/light;
+- Componentes de resultado e visualização de score.
+
+---
 
 ## Arquitetura Atual
 
@@ -146,13 +198,18 @@ AnalyzePromiseHandler
 ↓
 PromiseAnalyzerService
 ↓
-llm.Client
-↓
-GeminiClient
-↓
-Gemini API
+┌─────────────────────┐
+│ LLM Provider        │
+│ Gemini / OpenRouter │
+└─────────────────────┘
 ↓
 PromiseExtraction
+↓
+Public Data Provider
+↓
+CNES / DATASUS
+↓
+Evidence
 ↓
 ScoringModelV1
 ↓
@@ -160,8 +217,43 @@ ScoreCalculatorService
 ↓
 Analysis
 ↓
+PostgreSQL
+↓
 AnalyzePromiseResponse
 ```
+
+### Fluxo de Análise
+
+```txt
+Promessa
+↓
+LLM
+↓
+Extração estruturada
+↓
+Busca de evidências públicas
+↓
+Linha de base (baseline)
+↓
+Avaliação dos critérios
+↓
+Cálculo de Score
+↓
+Cálculo de Confidence
+↓
+Persistência
+↓
+Resposta para o frontend
+```
+
+## Próximos Passos
+
+- Banco Central (IPCA);
+- Múltiplos provedores de dados públicos;
+- Melhorias na metodologia de plausibilidade;
+- Transparência da metodologia no frontend;
+- Docker Compose completo;
+- Release 1.
 
 ## Contrato da Extração LLM
 

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/domain"
@@ -161,11 +162,15 @@ func buildCriteria(
 		switch criterion.Key {
 
 			case "evidence_plausibility":
-				criterion.Status = evaluateEvidencePlausibility(evidence)
-				criterion.Explanation = explainEvidencePlausibility(criterion.Status)
+				criterion.Status = evaluateEvidencePlausibility(extraction, evidence)
+				criterion.Explanation = explainEvidencePlausibility(
+					extraction,
+					evidence,
+					criterion.Status,
+				)
 
-				criteria = append(criteria, criterion)
-				continue
+	criteria = append(criteria, criterion)
+	continue
 
 		case "deadline":
 			if extraction != nil &&
@@ -324,27 +329,90 @@ func hasVagueMeasurement(text string, extraction *llm.PromiseExtraction) bool {
 	return false
 }
 
-func evaluateEvidencePlausibility(evidence []domain.Evidence) domain.CriterionStatus {
+func evaluateEvidencePlausibility(
+	extraction *llm.PromiseExtraction,
+	evidence []domain.Evidence,
+) domain.CriterionStatus {
 	if len(evidence) == 0 {
 		return domain.CriterionStatusNo
 	}
 
+	if extraction == nil || extraction.TargetValue <= 0 {
+		return domain.CriterionStatusPartial
+	}
+
 	for _, item := range evidence {
-		if item.Value > 0 {
+		if item.Value <= 0 {
+			continue
+		}
+
+		ratio := extraction.TargetValue / item.Value
+
+		switch {
+		case ratio <= 0.10:
+			return domain.CriterionStatusYes
+
+		case ratio <= 0.50:
 			return domain.CriterionStatusPartial
+
+		default:
+			return domain.CriterionStatusNo
 		}
 	}
 
 	return domain.CriterionStatusPartial
 }
 
-func explainEvidencePlausibility(status domain.CriterionStatus) string {
-	switch status {
-	case domain.CriterionStatusYes:
-		return "A promessa apresenta plausibilidade compatível com evidências públicas disponíveis."
-	case domain.CriterionStatusPartial:
-		return "Há evidências públicas relacionadas, mas ainda não há comparação quantitativa suficiente entre meta e linha de base."
-	default:
+func explainEvidencePlausibility(
+	extraction *llm.PromiseExtraction,
+	evidence []domain.Evidence,
+	status domain.CriterionStatus,
+) string {
+	if len(evidence) == 0 {
 		return "Não foram encontradas evidências públicas suficientes para avaliar a plausibilidade da promessa."
 	}
+
+	if extraction == nil || extraction.TargetValue <= 0 {
+		return "Há evidências públicas relacionadas, mas a meta quantitativa não foi identificada com segurança para comparação com a linha de base."
+	}
+
+	for _, item := range evidence {
+		if item.Value <= 0 {
+			continue
+		}
+
+		percentage := (extraction.TargetValue / item.Value) * 100
+
+		ratio := extraction.TargetValue / item.Value
+
+		statusDescription := "plausibilidade moderada"
+
+		switch {
+		case ratio <= 0.10:
+			statusDescription = "plausibilidade alta"
+
+		case ratio <= 0.50:
+			statusDescription = "plausibilidade moderada"
+
+		default:
+			statusDescription = "plausibilidade baixa"
+		}
+
+		return fmt.Sprintf(
+			"A meta proposta é de %.0f %s. A linha de base pública identificada é de %.0f %s, segundo %s. A meta representa aproximadamente %.2f%% da linha de base atual, indicando %s. A avaliação continua limitada por fatores como orçamento, execução, prazo e distribuição regional.",
+			extraction.TargetValue,
+			extraction.TargetUnit,
+			item.Value,
+			item.Unit,
+			item.Reference,
+			percentage,
+			statusDescription,
+		)
+	}
+
+	if status == domain.CriterionStatusPartial {
+		return "Há evidências públicas relacionadas, mas a linha de base encontrada não possui valor quantitativo suficiente para comparação."
+	}
+
+	return "Não foram encontradas evidências públicas suficientes para avaliar a plausibilidade da promessa."
 }
