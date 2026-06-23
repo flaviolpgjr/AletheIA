@@ -80,7 +80,7 @@ func (c *Client) FetchHospitalFacilitiesBaseline(
 		Value:       float64(totalHospitals),
 		Unit:        "hospitais",
 		Source:      "DATASUS/CNES",
-		Reference:   "CNES - Estabelecimentos de Saúde: codigo_tipo_unidade IN (5, 7), status=1",
+		Reference: "Quantidade de hospitais gerais e especializados ativos registrados no Cadastro Nacional de Estabelecimentos de Saúde (CNES)",
 		CollectedAt: time.Now(),
 	}, nil
 }
@@ -105,7 +105,7 @@ func (c *Client) FindEvidence(
 	return []domain.Evidence{
 		{
 			Source:      "Ministério da Saúde / DATASUS",
-			Title:       "CNES - Estabelecimentos de Saúde",
+			Title: "Hospitais ativos registrados no CNES",
 			Description: "Cadastro Nacional de Estabelecimentos de Saúde usado como referência para contar hospitais gerais e especializados ativos no Brasil.",
 			URL:         "https://apidadosabertos.saude.gov.br/cnes/estabelecimentos",
 

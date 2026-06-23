@@ -16,11 +16,25 @@ export type PublicSource = {
   description: string;
 };
 
+export type Evidence = {
+  source: string;
+  title: string;
+  description: string;
+  url: string;
+  indicator: string;
+  value: number;
+  unit: string;
+  reference: string;
+};
+
 export type AnalyzePromiseResponse = {
   summary: string;
   score: number;
   confidence: number;
+  target_value: number;
+  target_unit: string;
   criteria: Criterion[];
   risks: string[];
   sources: PublicSource[];
+  evidence: Evidence[];
 };
