@@ -8,6 +8,7 @@ import (
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/domain"
 	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
+	"github.com/flaviolpgjr/aletheia/backend/internal/publicdata"
 	"github.com/flaviolpgjr/aletheia/backend/internal/repositories"
 	"github.com/flaviolpgjr/aletheia/backend/internal/utils"
 )
@@ -15,7 +16,7 @@ type PromiseAnalyzerService struct {
 	scoreCalculator    *ScoreCalculatorService
 	llmClient          llm.Client
 	analysisRepository AnalysisRepository
-	publicDataProvider PublicDataProvider
+	publicDataProvider publicdata.Provider
 }
 
 type AnalysisRepository interface {
@@ -23,14 +24,11 @@ type AnalysisRepository interface {
 	Save(ctx context.Context, promiseText string, promiseHash string, analysis domain.Analysis) error
 }
 
-type PublicDataProvider interface {
-	FindEvidence(ctx context.Context, text string) ([]domain.Evidence, error)
-}
 
 func NewPromiseAnalyzerService(
 	llmClient llm.Client,
 	analysisRepository AnalysisRepository,
-	publicDataProvider PublicDataProvider,
+	publicDataProvider publicdata.Provider,
 ) *PromiseAnalyzerService {
 	return &PromiseAnalyzerService{
 		scoreCalculator:     NewScoreCalculatorService(),

@@ -9,6 +9,7 @@ import (
 	"github.com/flaviolpgjr/aletheia/backend/internal/database"
 	"github.com/flaviolpgjr/aletheia/backend/internal/http/routes"
 	"github.com/flaviolpgjr/aletheia/backend/internal/llmfactory"
+	"github.com/flaviolpgjr/aletheia/backend/internal/publicdata"
 	"github.com/flaviolpgjr/aletheia/backend/internal/publicdata/health"
 	"github.com/flaviolpgjr/aletheia/backend/internal/repositories"
 	"github.com/flaviolpgjr/aletheia/backend/internal/services"
@@ -46,16 +47,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	healthClient := health.NewClient(
-		publicDataBaselineRepository,
-	)
+	healthClient := health.NewClient(publicDataBaselineRepository)
 
+	publicDataAggregator := publicdata.NewAggregator(
+		healthClient,
+	)
 	analyzerService := services.NewPromiseAnalyzerService(
 		llmClient,
 		analysisRepository,
-		healthClient,
+		publicDataAggregator,
 	)
-
 	router := routes.NewRouter(analyzerService)
 
 	log.Println("API running on http://localhost:8080")
