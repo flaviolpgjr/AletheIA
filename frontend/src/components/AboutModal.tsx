@@ -9,20 +9,21 @@ export function AboutModal({ onClose }: AboutModalProps) {
     <Modal title="Sobre o AletheIA" onClose={onClose}>
       <div className="space-y-4">
         <p>
-          O <strong>AletheIA</strong> é um projeto que utiliza Inteligência
-          Artificial e dados públicos para analisar a viabilidade de promessas
+          O <strong>AletheIA</strong> é uma plataforma experimental que utiliza
+          Inteligência Artificial e dados públicos para analisar promessas
           públicas de forma transparente e explicável.
         </p>
 
         <p>
-          O objetivo não é prever o futuro ou determinar verdades absolutas, mas
-          apresentar análises fundamentadas em dados, indicadores e informações
-          verificáveis.
+          O objetivo é ajudar cidadãos, jornalistas, pesquisadores e
+          desenvolvedores a entenderem se uma promessa é clara, mensurável e
+          verificável com base em evidências públicas.
         </p>
 
         <p>
-          Os resultados são acompanhados por um nível de confiança, fontes
-          utilizadas e limitações identificadas durante a análise.
+          O AletheIA não prevê o futuro e não afirma se uma promessa será
+          cumprida. Ele organiza informações, critérios, riscos e evidências
+          para apoiar uma análise mais responsável.
         </p>
 
         <div>
@@ -30,10 +31,10 @@ export function AboutModal({ onClose }: AboutModalProps) {
 
           <ul className="list-disc space-y-1 pl-5">
             <li>Não inventar dados.</li>
-            <li>Mostrar as fontes utilizadas.</li>
-            <li>Explicar as conclusões apresentadas.</li>
-            <li>Indicar limitações e dados ausentes.</li>
-            <li>Ser transparente sobre o nível de confiança da análise.</li>
+            <li>Mostrar fontes públicas utilizadas.</li>
+            <li>Explicar os critérios avaliados.</li>
+            <li>Indicar riscos, dependências e limitações.</li>
+            <li>Separar evidência pública de opinião gerada por IA.</li>
           </ul>
         </div>
       </div>

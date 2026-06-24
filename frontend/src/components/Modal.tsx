@@ -32,7 +32,7 @@ export function Modal({ title, children, onClose }: ModalProps) {
           </button>
         </div>
 
-        <div className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
+        <div className="max-h-[70vh] overflow-y-auto pr-2 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
           {children}
         </div>
       </div>

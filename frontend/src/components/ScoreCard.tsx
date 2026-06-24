@@ -35,7 +35,7 @@ export function ScoreCard({ score }: ScoreCardProps) {
       </h2>
 
       <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        Sustentação verificável da promessa
+        Qualidade e verificabilidade da promessa
       </p>
 
       <div className="relative mx-auto mt-6 h-28 w-56">
@@ -82,6 +82,10 @@ export function ScoreCard({ score }: ScoreCardProps) {
       >
         {status.label}
       </div>
+
+      <p className="mx-auto mt-3 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
+        {status.description}
+      </p>
     </div>
   );
 }
@@ -89,7 +93,9 @@ export function ScoreCard({ score }: ScoreCardProps) {
 function getScoreStatus(score: number) {
   if (score >= 80) {
     return {
-      label: "Alta sustentação",
+      label: "Alta qualidade de análise",
+      description:
+        "A promessa é clara, mensurável e possui boa sustentação em dados públicos.",
       className:
         "border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
     };
@@ -97,14 +103,18 @@ function getScoreStatus(score: number) {
 
   if (score >= 50) {
     return {
-      label: "Sustentação moderada",
+      label: "Qualidade moderada",
+      description:
+        "A promessa possui alguns elementos verificáveis, mas ainda apresenta limitações relevantes.",
       className:
         "border border-yellow-500/30 bg-yellow-500/10 text-yellow-600 dark:text-yellow-300",
     };
   }
 
   return {
-    label: "Baixa sustentação",
+    label: "Baixa qualidade de análise",
+    description:
+      "A promessa tem pouca clareza, baixa verificabilidade ou ausência de dados públicos suficientes.",
     className:
       "border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-300",
   };

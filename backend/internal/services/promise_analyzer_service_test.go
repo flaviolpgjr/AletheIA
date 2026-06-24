@@ -83,12 +83,12 @@ func TestAnalyzeWhenPromiseMentionsTax(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if analysis.Score != 40 {
-		t.Errorf("expected score 40, got %d", analysis.Score)
+	if analysis.Score != 33 {
+		t.Errorf("expected score 33, got %d", analysis.Score)
 	}
 
-	if analysis.Confidence != 42 {
-		t.Errorf("expected confidence 42, got %d", analysis.Confidence)
+	if analysis.Confidence != 35 {
+		t.Errorf("expected confidence 35, got %d", analysis.Confidence)
 	}
 
 	if len(analysis.Criteria) != 7 {
@@ -115,12 +115,12 @@ func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if analysis.Score != 33 {
-		t.Errorf("expected score 33, got %d", analysis.Score)
+	if analysis.Score != 25 {
+		t.Errorf("expected score 25, got %d", analysis.Score)
 	}
 
-	if analysis.Confidence != 35 {
-		t.Errorf("expected confidence 35, got %d", analysis.Confidence)
+	if analysis.Confidence != 28 {
+		t.Errorf("expected confidence 28, got %d", analysis.Confidence)
 	}
 
 	if len(analysis.Criteria) != 7 {

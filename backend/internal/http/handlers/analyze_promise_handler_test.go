@@ -20,7 +20,7 @@ func (f *fakeLLMClient) ExtractPromise(
 	text string,
 ) (*llm.PromiseExtraction, error) {
 	return &llm.PromiseExtraction{
-		Summary: "Resumo gerado pela LLM.",
+		Summary:     "Resumo gerado pela LLM.",
 		TargetValue: 100,
 		TargetUnit:  "hospitais",
 		Risks: []string{
@@ -62,7 +62,12 @@ func (f *fakeLLMClient) ExtractPromise(
 }
 
 func TestAnalyzePromiseHandler(t *testing.T) {
-	service := services.NewPromiseAnalyzerService(&fakeLLMClient{}, nil, nil)
+	service := services.NewPromiseAnalyzerService(
+		&fakeLLMClient{},
+		nil,
+		nil,
+	)
+
 	handler := NewAnalyzePromiseHandler(service)
 
 	requestBody := dto.AnalyzePromiseRequest{
@@ -99,16 +104,16 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if responseBody.Score != 40 {
+	if responseBody.Score != 33 {
 		t.Errorf(
-			"expected score 40, got %d",
+			"expected score 33, got %d",
 			responseBody.Score,
 		)
 	}
 
-	if responseBody.Confidence != 42 {
+	if responseBody.Confidence != 35 {
 		t.Errorf(
-			"expected confidence 42, got %d",
+			"expected confidence 35, got %d",
 			responseBody.Confidence,
 		)
 	}

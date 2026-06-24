@@ -1,4 +1,4 @@
-import { Moon, Sun, Info } from "lucide-react";
+import { BookOpen, Info, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import logoIcon from "../assets/logo-icon.png";
@@ -28,8 +28,19 @@ export function Header() {
             onClick={() => navigate("/sobre")}
             className="rounded-xl border border-zinc-300 p-3 text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             aria-label="Sobre o projeto"
+            title="Sobre o projeto"
           >
             <Info size={20} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/metodologia")}
+            className="rounded-xl border border-zinc-300 p-3 text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            aria-label="Como calculamos o score"
+            title="Como calculamos o score"
+          >
+            <BookOpen size={20} />
           </button>
 
           <button
@@ -37,6 +48,7 @@ export function Header() {
             onClick={toggleTheme}
             className="rounded-xl border border-zinc-300 p-3 text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             aria-label="Alternar tema"
+            title="Alternar tema"
           >
             {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
           </button>

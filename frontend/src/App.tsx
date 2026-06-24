@@ -10,6 +10,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/sobre" element={<HomePage />} />
+          <Route path="/metodologia" element={<HomePage />} />
         </Routes>
       </BrowserRouter>
     </AppProvider>

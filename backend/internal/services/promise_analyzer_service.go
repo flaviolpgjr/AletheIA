@@ -153,22 +153,40 @@ func buildCriteria(
 	evidence []domain.Evidence,
 ) []domain.Criterion {
 	criteria := make([]domain.Criterion, 0, len(domain.ScoringModelV1))
+	hasEvidence := len(evidence) > 0
 
 	for _, modelCriterion := range domain.ScoringModelV1 {
 		criterion := modelCriterion
 
 		switch criterion.Key {
+		case "public_data":
+			if !hasEvidence {
+				criterion.Status = domain.CriterionStatusNo
+				criterion.Explanation = "Não foram encontradas evidências públicas integradas ao AletheIA para avaliar esta promessa."
 
-			case "evidence_plausibility":
-				criterion.Status = evaluateEvidencePlausibility(extraction, evidence)
-				criterion.Explanation = explainEvidencePlausibility(
-					extraction,
-					evidence,
-					criterion.Status,
-				)
+				criteria = append(criteria, criterion)
+				continue
+			}
 
-	criteria = append(criteria, criterion)
-	continue
+		case "historical_baseline":
+			if !hasEvidence {
+				criterion.Status = domain.CriterionStatusNo
+				criterion.Explanation = "Não há linha de base pública integrada ao AletheIA para comparar esta promessa."
+
+				criteria = append(criteria, criterion)
+				continue
+			}
+
+		case "evidence_plausibility":
+			criterion.Status = evaluateEvidencePlausibility(extraction, evidence)
+			criterion.Explanation = explainEvidencePlausibility(
+				extraction,
+				evidence,
+				criterion.Status,
+			)
+
+			criteria = append(criteria, criterion)
+			continue
 
 		case "deadline":
 			if extraction != nil &&
