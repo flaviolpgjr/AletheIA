@@ -21,7 +21,7 @@ func (f *fakePublicDataProvider) FindEvidence(
 			Indicator: "hospital_facilities",
 			Value:     5115,
 			Unit:      "hospitais",
-			Reference: "CNES - Estabelecimentos de Saúde: codigo_tipo_unidade IN (5, 7), status=1",
+			Reference: "Cadastro Nacional de Estabelecimentos de Saúde (CNES) - Quantidade de hospitais ativos no Brasil",
 		},
 	}, nil
 }
@@ -115,12 +115,12 @@ func TestAnalyzeWhenPromiseHasNoKnownKeywords(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if analysis.Score != 25 {
-		t.Errorf("expected score 25, got %d", analysis.Score)
+	if analysis.Score != 18 {
+		t.Errorf("expected score 18, got %d", analysis.Score)
 	}
 
-	if analysis.Confidence != 28 {
-		t.Errorf("expected confidence 28, got %d", analysis.Confidence)
+	if analysis.Confidence != 21 {
+		t.Errorf("expected confidence 21, got %d", analysis.Confidence)
 	}
 
 	if len(analysis.Criteria) != 7 {

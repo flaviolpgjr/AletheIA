@@ -12,18 +12,18 @@ import (
 	"github.com/flaviolpgjr/aletheia/backend/internal/repositories"
 	"github.com/flaviolpgjr/aletheia/backend/internal/utils"
 )
+
 type PromiseAnalyzerService struct {
-	scoreCalculator    *ScoreCalculatorService
-	llmClient          llm.Client
+	scoreCalculator     *ScoreCalculatorService
+	llmClient           llm.Client
 	analysisRepository AnalysisRepository
-	publicDataProvider publicdata.Provider
+	publicDataProvider  publicdata.Provider
 }
 
 type AnalysisRepository interface {
 	FindByHash(ctx context.Context, promiseHash string) (*domain.Analysis, error)
 	Save(ctx context.Context, promiseText string, promiseHash string, analysis domain.Analysis) error
 }
-
 
 func NewPromiseAnalyzerService(
 	llmClient llm.Client,
@@ -127,15 +127,15 @@ func (s *PromiseAnalyzerService) Analyze(
 	}
 
 	analysis := domain.Analysis{
-		Summary:    summary,
-		Score:      score,
-		Confidence: confidence,
+		Summary:     summary,
+		Score:       score,
+		Confidence:  confidence,
 		TargetValue: targetValue,
 		TargetUnit:  targetUnit,
-		Criteria:   criteria,
-		Risks:      risks,
-		Sources:    sources,
-		Evidence:   evidence,
+		Criteria:    criteria,
+		Risks:       risks,
+		Sources:     sources,
+		Evidence:    evidence,
 	}
 
 	if s.analysisRepository != nil {
@@ -201,8 +201,13 @@ func buildCriteria(
 
 		case "measurability":
 			if hasVagueMeasurement(text, extraction) {
-				criterion.Status = domain.CriterionStatusPartial
-				criterion.Explanation = "A promessa possui número, mas o indicador não está claramente definido ou é subjetivo."
+				if hasMeasurement(text) {
+					criterion.Status = domain.CriterionStatusPartial
+					criterion.Explanation = "A promessa possui uma meta quantitativa, porém o indicador é subjetivo e de difícil verificação."
+				} else {
+					criterion.Status = domain.CriterionStatusNo
+					criterion.Explanation = "A promessa não possui um indicador mensurável claramente definido."
+				}
 
 				criteria = append(criteria, criterion)
 				continue
