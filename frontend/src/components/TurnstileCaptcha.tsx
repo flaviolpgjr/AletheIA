@@ -1,5 +1,7 @@
 import { Turnstile } from "@marsidev/react-turnstile";
 
+import { useAppContext } from "../hooks/useAppContext";
+
 type TurnstileCaptchaProps = {
   onSuccess: (token: string) => void;
   onExpire: () => void;
@@ -11,6 +13,8 @@ export function TurnstileCaptcha({
   onExpire,
   onError,
 }: TurnstileCaptchaProps) {
+  const { theme } = useAppContext();
+
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   if (!siteKey) {
@@ -25,6 +29,9 @@ export function TurnstileCaptcha({
     <div className="mt-4">
       <Turnstile
         siteKey={siteKey}
+        options={{
+          theme,
+        }}
         onSuccess={onSuccess}
         onExpire={onExpire}
         onError={onError}

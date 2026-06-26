@@ -42,16 +42,18 @@ export function AnalyzeForm() {
         className="min-h-40 w-full resize-none rounded-xl border border-zinc-300 bg-zinc-50 p-4 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
       />
 
-      <TurnstileCaptcha
-        onSuccess={(token) => setCaptchaToken(token)}
-        onExpire={() => setCaptchaToken(null)}
-        onError={() => setCaptchaToken(null)}
-      />
+      <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-3">
+          <TurnstileCaptcha
+            onSuccess={(token) => setCaptchaToken(token)}
+            onExpire={() => setCaptchaToken(null)}
+            onError={() => setCaptchaToken(null)}
+          />
 
-      <div className="mt-4 flex items-center justify-between gap-4">
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">
-          {text.length}/1000 caracteres
-        </span>
+          <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+            {text.length}/1000 caracteres
+          </span>
+        </div>
 
         <button
           type="submit"
@@ -61,12 +63,6 @@ export function AnalyzeForm() {
           {loading ? "Analisando..." : "Analisar promessa"}
         </button>
       </div>
-
-      {!captchaToken && (
-        <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-          Confirme a verificação de segurança para analisar a promessa.
-        </p>
-      )}
 
       {error && (
         <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
