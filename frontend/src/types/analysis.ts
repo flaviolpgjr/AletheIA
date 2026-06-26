@@ -1,5 +1,6 @@
 export type AnalyzePromiseRequest = {
   text: string;
+  captcha_token: string;
 };
 
 export type Criterion = {

@@ -3,17 +3,28 @@ import type { SyntheticEvent } from "react";
 
 import { useAnalyzePromise } from "../hooks/useAnalyzePromise";
 import { AnalysisResult } from "./AnalysisResult";
+import { TurnstileCaptcha } from "./TurnstileCaptcha";
 
 export function AnalyzeForm() {
   const [text, setText] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const { analyze, loading, error, result } = useAnalyzePromise();
 
   async function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    await analyze({ text });
+    if (!captchaToken) {
+      return;
+    }
+
+    await analyze({
+      text,
+      captcha_token: captchaToken,
+    });
   }
+
+  const isSubmitDisabled = loading || text.trim().length === 0 || !captchaToken;
 
   return (
     <form
@@ -31,6 +42,12 @@ export function AnalyzeForm() {
         className="min-h-40 w-full resize-none rounded-xl border border-zinc-300 bg-zinc-50 p-4 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
       />
 
+      <TurnstileCaptcha
+        onSuccess={(token) => setCaptchaToken(token)}
+        onExpire={() => setCaptchaToken(null)}
+        onError={() => setCaptchaToken(null)}
+      />
+
       <div className="mt-4 flex items-center justify-between gap-4">
         <span className="text-xs text-zinc-500 dark:text-zinc-400">
           {text.length}/1000 caracteres
@@ -38,12 +55,18 @@ export function AnalyzeForm() {
 
         <button
           type="submit"
-          disabled={loading || text.trim().length === 0}
+          disabled={isSubmitDisabled}
           className="rounded-xl bg-gradient-to-r from-cyan-500 to-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Analisando..." : "Analisar promessa"}
         </button>
       </div>
+
+      {!captchaToken && (
+        <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+          Confirme a verificação de segurança para analisar a promessa.
+        </p>
+      )}
 
       {error && (
         <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
