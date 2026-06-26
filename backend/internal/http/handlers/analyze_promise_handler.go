@@ -7,16 +7,22 @@ import (
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/http/dto"
 	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
+	"github.com/flaviolpgjr/aletheia/backend/internal/security/captcha"
 	"github.com/flaviolpgjr/aletheia/backend/internal/services"
 )
 
 type AnalyzePromiseHandler struct {
-	service *services.PromiseAnalyzerService
+	service          *services.PromiseAnalyzerService
+	captchaValidator captcha.Validator
 }
 
-func NewAnalyzePromiseHandler(service *services.PromiseAnalyzerService) *AnalyzePromiseHandler {
+func NewAnalyzePromiseHandler(
+	service *services.PromiseAnalyzerService,
+	captchaValidator captcha.Validator,
+) *AnalyzePromiseHandler {
 	return &AnalyzePromiseHandler{
-		service: service,
+		service:          service,
+		captchaValidator: captchaValidator,
 	}
 }
 
@@ -27,6 +33,14 @@ func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	if h.captchaValidator != nil {
+		err = h.captchaValidator.Validate(r.Context(), request.CaptchaToken)
+		if err != nil {
+			http.Error(w, "invalid captcha", http.StatusForbidden)
+			return
+		}
 	}
 
 	analysis, err := h.service.Analyze(r.Context(), request.Text)
@@ -86,15 +100,15 @@ func (h *AnalyzePromiseHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := dto.AnalyzePromiseResponse{
-		Summary:    analysis.Summary,
-		Score:      analysis.Score,
-		Confidence: analysis.Confidence,
+		Summary:     analysis.Summary,
+		Score:       analysis.Score,
+		Confidence:  analysis.Confidence,
 		TargetValue: analysis.TargetValue,
 		TargetUnit:  analysis.TargetUnit,
-		Criteria:   criteria,
-		Risks:      analysis.Risks,
-		Sources:    sources,
-		Evidence: 	evidence,
+		Criteria:    criteria,
+		Risks:       analysis.Risks,
+		Sources:     sources,
+		Evidence:    evidence,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

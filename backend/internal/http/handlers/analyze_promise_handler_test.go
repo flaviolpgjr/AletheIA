@@ -68,7 +68,7 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 		nil,
 	)
 
-	handler := NewAnalyzePromiseHandler(service)
+	handler := NewAnalyzePromiseHandler(service, nil)
 
 	requestBody := dto.AnalyzePromiseRequest{
 		Text: "reduzir imposto sobre combustível",

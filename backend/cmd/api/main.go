@@ -12,6 +12,7 @@ import (
 	"github.com/flaviolpgjr/aletheia/backend/internal/publicdata"
 	"github.com/flaviolpgjr/aletheia/backend/internal/publicdata/health"
 	"github.com/flaviolpgjr/aletheia/backend/internal/repositories"
+	"github.com/flaviolpgjr/aletheia/backend/internal/security/captcha"
 	"github.com/flaviolpgjr/aletheia/backend/internal/services"
 	"github.com/joho/godotenv"
 )
@@ -52,12 +53,21 @@ func main() {
 	publicDataAggregator := publicdata.NewAggregator(
 		healthClient,
 	)
+
 	analyzerService := services.NewPromiseAnalyzerService(
 		llmClient,
 		analysisRepository,
 		publicDataAggregator,
 	)
-	router := routes.NewRouter(analyzerService)
+
+	captchaValidator := captcha.NewTurnstileValidator(
+		os.Getenv("TURNSTILE_SECRET_KEY"),
+	)
+
+	router := routes.NewRouter(
+		analyzerService,
+		captchaValidator,
+	)
 
 	log.Println("API running on http://localhost:8080")
 

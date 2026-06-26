@@ -2,6 +2,7 @@ package dto
 
 type AnalyzePromiseRequest struct {
 	Text string `json:"text"`
+	CaptchaToken string `json:"captcha_token"`
 }
 
 type CriterionResponse struct {
