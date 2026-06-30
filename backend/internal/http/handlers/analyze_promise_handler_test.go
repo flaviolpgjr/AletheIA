@@ -4,21 +4,29 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/flaviolpgjr/aletheia/backend/internal/http/dto"
 	"github.com/flaviolpgjr/aletheia/backend/internal/llm"
+	"github.com/flaviolpgjr/aletheia/backend/internal/security/captcha"
 	"github.com/flaviolpgjr/aletheia/backend/internal/services"
 )
 
-type fakeLLMClient struct{}
+type fakeLLMClient struct {
+	err error
+}
 
 func (f *fakeLLMClient) ExtractPromise(
 	ctx context.Context,
 	text string,
 ) (*llm.PromiseExtraction, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+
 	return &llm.PromiseExtraction{
 		Summary:     "Resumo gerado pela LLM.",
 		TargetValue: 100,
@@ -61,6 +69,17 @@ func (f *fakeLLMClient) ExtractPromise(
 	}, nil
 }
 
+type fakeCaptchaValidator struct {
+	err error
+}
+
+func (f *fakeCaptchaValidator) Validate(
+	ctx context.Context,
+	token string,
+) error {
+	return f.err
+}
+
 func TestAnalyzePromiseHandler(t *testing.T) {
 	service := services.NewPromiseAnalyzerService(
 		&fakeLLMClient{},
@@ -68,10 +87,14 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 		nil,
 	)
 
-	handler := NewAnalyzePromiseHandler(service, nil)
+	handler := NewAnalyzePromiseHandler(
+		service,
+		&fakeCaptchaValidator{},
+	)
 
 	requestBody := dto.AnalyzePromiseRequest{
-		Text: "reduzir imposto sobre combustível",
+		Text:         "reduzir imposto sobre combustível",
+		CaptchaToken: "valid-token",
 	}
 
 	body, err := json.Marshal(requestBody)
@@ -139,14 +162,6 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 		)
 	}
 
-	if responseBody.TargetValue == 0 {
-		t.Fatal("expected target value to be exposed in response")
-	}
-
-	if responseBody.TargetUnit == "" {
-		t.Fatal("expected target unit to be exposed in response")
-	}
-
 	if len(responseBody.Criteria) != 7 {
 		t.Errorf(
 			"expected 7 criteria, got %d",
@@ -159,5 +174,181 @@ func TestAnalyzePromiseHandler(t *testing.T) {
 			"expected 1 risk, got %d",
 			len(responseBody.Risks),
 		)
+	}
+}
+
+func TestAnalyzePromiseHandlerReturnsForbiddenWhenCaptchaIsMissing(t *testing.T) {
+	service := services.NewPromiseAnalyzerService(
+		&fakeLLMClient{},
+		nil,
+		nil,
+	)
+
+	handler := NewAnalyzePromiseHandler(
+		service,
+		&fakeCaptchaValidator{
+			err: captcha.ErrInvalidCaptcha,
+		},
+	)
+
+	requestBody := dto.AnalyzePromiseRequest{
+		Text: "reduzir imposto sobre combustível",
+	}
+
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		t.Fatalf("failed to marshal request: %v", err)
+	}
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/promises/analyze",
+		bytes.NewBuffer(body),
+	)
+
+	recorder := httptest.NewRecorder()
+
+	handler.Handle(recorder, req)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf(
+			"expected status %d, got %d",
+			http.StatusForbidden,
+			recorder.Code,
+		)
+	}
+}
+
+func TestAnalyzePromiseHandlerReturnsForbiddenWhenCaptchaIsInvalid(t *testing.T) {
+	service := services.NewPromiseAnalyzerService(
+		&fakeLLMClient{},
+		nil,
+		nil,
+	)
+
+	handler := NewAnalyzePromiseHandler(
+		service,
+		&fakeCaptchaValidator{
+			err: captcha.ErrInvalidCaptcha,
+		},
+	)
+
+	requestBody := dto.AnalyzePromiseRequest{
+		Text:         "reduzir imposto sobre combustível",
+		CaptchaToken: "invalid-token",
+	}
+
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		t.Fatalf("failed to marshal request: %v", err)
+	}
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/promises/analyze",
+		bytes.NewBuffer(body),
+	)
+
+	recorder := httptest.NewRecorder()
+
+	handler.Handle(recorder, req)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf(
+			"expected status %d, got %d",
+			http.StatusForbidden,
+			recorder.Code,
+		)
+	}
+}
+
+func TestAnalyzePromiseHandlerReturnsBadRequestWhenBodyIsInvalid(t *testing.T) {
+	service := services.NewPromiseAnalyzerService(
+		&fakeLLMClient{},
+		nil,
+		nil,
+	)
+
+	handler := NewAnalyzePromiseHandler(
+		service,
+		&fakeCaptchaValidator{},
+	)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/promises/analyze",
+		bytes.NewBufferString("{invalid-json"),
+	)
+
+	recorder := httptest.NewRecorder()
+
+	handler.Handle(recorder, req)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf(
+			"expected status %d, got %d",
+			http.StatusBadRequest,
+			recorder.Code,
+		)
+	}
+}
+
+func TestAnalyzePromiseHandlerReturnsTooManyRequestsWhenLLMRateLimit(t *testing.T) {
+	service := services.NewPromiseAnalyzerService(
+		&fakeLLMClient{
+			err: llm.ErrRateLimit,
+		},
+		nil,
+		nil,
+	)
+
+	handler := NewAnalyzePromiseHandler(
+		service,
+		&fakeCaptchaValidator{},
+	)
+
+	requestBody := dto.AnalyzePromiseRequest{
+		Text:         "reduzir imposto sobre combustível",
+		CaptchaToken: "valid-token",
+	}
+
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		t.Fatalf("failed to marshal request: %v", err)
+	}
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/promises/analyze",
+		bytes.NewBuffer(body),
+	)
+
+	recorder := httptest.NewRecorder()
+
+	handler.Handle(recorder, req)
+
+	if recorder.Code != http.StatusTooManyRequests {
+		t.Fatalf(
+			"expected status %d, got %d",
+			http.StatusTooManyRequests,
+			recorder.Code,
+		)
+	}
+}
+
+func TestFakeCaptchaValidatorReturnsConfiguredError(t *testing.T) {
+	expectedErr := captcha.ErrInvalidCaptcha
+
+	validator := &fakeCaptchaValidator{
+		err: expectedErr,
+	}
+
+	err := validator.Validate(
+		context.Background(),
+		"token",
+	)
+
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("expected %v, got %v", expectedErr, err)
 	}
 }

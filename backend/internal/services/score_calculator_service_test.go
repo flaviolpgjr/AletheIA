@@ -6,7 +6,7 @@ import (
 	"github.com/flaviolpgjr/aletheia/backend/internal/domain"
 )
 
-func TestScoreCalculatorService_Calculate(t *testing.T) {
+func TestScoreCalculatorServiceCalculate(t *testing.T) {
 	calculator := NewScoreCalculatorService()
 
 	criteria := []domain.Criterion{
@@ -43,5 +43,41 @@ func TestScoreCalculatorService_Calculate(t *testing.T) {
 
 	if updatedCriteria[2].Score != 0 {
 		t.Errorf("expected third criterion score 0, got %.2f", updatedCriteria[2].Score)
+	}
+}
+
+func TestScoreCalculatorServiceCalculateWithEmptyCriteria(t *testing.T) {
+	calculator := NewScoreCalculatorService()
+
+	updatedCriteria, score := calculator.Calculate([]domain.Criterion{})
+
+	if score != 0 {
+		t.Errorf("expected score 0, got %d", score)
+	}
+
+	if len(updatedCriteria) != 0 {
+		t.Errorf("expected empty criteria, got %d", len(updatedCriteria))
+	}
+}
+
+func TestScoreCalculatorServiceCalculateRoundsFinalScore(t *testing.T) {
+	calculator := NewScoreCalculatorService()
+
+	criteria := []domain.Criterion{
+		{
+			Key:    "risks_dependencies",
+			Weight: 15,
+			Status: domain.CriterionStatusPartial,
+		},
+	}
+
+	updatedCriteria, score := calculator.Calculate(criteria)
+
+	if score != 8 {
+		t.Errorf("expected score 8, got %d", score)
+	}
+
+	if updatedCriteria[0].Score != 7.5 {
+		t.Errorf("expected criterion score 7.5, got %.2f", updatedCriteria[0].Score)
 	}
 }

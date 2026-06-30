@@ -147,23 +147,20 @@ func TestAnalyzeAddsEvidencePlausibilityCriterion(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	var found bool
+	criterion := findCriterionByKeyForTest(
+		analysis.Criteria,
+		"evidence_plausibility",
+	)
 
-	for _, criterion := range analysis.Criteria {
-		if criterion.Key == "evidence_plausibility" {
-			found = true
-
-			if criterion.Status != domain.CriterionStatusYes {
-				t.Fatalf(
-					"expected yes, got %s",
-					criterion.Status,
-				)
-			}
-		}
+	if criterion == nil {
+		t.Fatal("expected evidence_plausibility criterion")
 	}
 
-	if !found {
-		t.Fatal("expected evidence_plausibility criterion")
+	if criterion.Status != domain.CriterionStatusYes {
+		t.Fatalf(
+			"expected yes, got %s",
+			criterion.Status,
+		)
 	}
 }
 
@@ -185,4 +182,125 @@ func TestAnalyzeIncludesExtractedTarget(t *testing.T) {
 	if analysis.TargetUnit != "hospitais" {
 		t.Errorf("expected target unit hospitais, got %s", analysis.TargetUnit)
 	}
+}
+
+func TestAnalyzeSetsMeasurabilityNoWhenPromiseIsSubjectiveWithoutNumber(t *testing.T) {
+	service := NewPromiseAnalyzerService(&fakeLLMClient{}, nil, nil)
+
+	analysis, err := service.Analyze(
+		context.Background(),
+		"Vou melhorar a felicidade dos brasileiros",
+	)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	criterion := findCriterionByKeyForTest(
+		analysis.Criteria,
+		"measurability",
+	)
+
+	if criterion == nil {
+		t.Fatal("expected measurability criterion")
+	}
+
+	if criterion.Status != domain.CriterionStatusNo {
+		t.Fatalf(
+			"expected no, got %s",
+			criterion.Status,
+		)
+	}
+
+	expectedExplanation := "A promessa não possui um indicador mensurável claramente definido."
+	if criterion.Explanation != expectedExplanation {
+		t.Fatalf(
+			"expected explanation %q, got %q",
+			expectedExplanation,
+			criterion.Explanation,
+		)
+	}
+}
+
+func TestAnalyzeSetsMeasurabilityPartialWhenPromiseIsSubjectiveWithNumber(t *testing.T) {
+	service := NewPromiseAnalyzerService(&fakeLLMClient{}, nil, nil)
+
+	analysis, err := service.Analyze(
+		context.Background(),
+		"Vou aumentar a felicidade dos brasileiros em 20%",
+	)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	criterion := findCriterionByKeyForTest(
+		analysis.Criteria,
+		"measurability",
+	)
+
+	if criterion == nil {
+		t.Fatal("expected measurability criterion")
+	}
+
+	if criterion.Status != domain.CriterionStatusPartial {
+		t.Fatalf(
+			"expected partial, got %s",
+			criterion.Status,
+		)
+	}
+
+	expectedExplanation := "A promessa possui uma meta quantitativa, porém o indicador é subjetivo e de difícil verificação."
+	if criterion.Explanation != expectedExplanation {
+		t.Fatalf(
+			"expected explanation %q, got %q",
+			expectedExplanation,
+			criterion.Explanation,
+		)
+	}
+}
+
+func TestAnalyzeWithoutEvidenceSetsPublicDataCriteriaToNo(t *testing.T) {
+	service := NewPromiseAnalyzerService(&fakeLLMClient{}, nil, nil)
+
+	analysis, err := service.Analyze(
+		context.Background(),
+		"Vou reduzir impostos federais em 20%",
+	)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	expectedStatuses := map[string]domain.CriterionStatus{
+		"public_data":            domain.CriterionStatusNo,
+		"historical_baseline":    domain.CriterionStatusNo,
+		"evidence_plausibility":  domain.CriterionStatusNo,
+	}
+
+	for key, expectedStatus := range expectedStatuses {
+		criterion := findCriterionByKeyForTest(analysis.Criteria, key)
+		if criterion == nil {
+			t.Fatalf("expected %s criterion", key)
+		}
+
+		if criterion.Status != expectedStatus {
+			t.Fatalf(
+				"expected %s status %s, got %s",
+				key,
+				expectedStatus,
+				criterion.Status,
+			)
+		}
+	}
+}
+
+func findCriterionByKeyForTest(
+	criteria []domain.Criterion,
+	key string,
+) *domain.Criterion {
+	for i := range criteria {
+		if criteria[i].Key == key {
+			return &criteria[i]
+		}
+	}
+
+	return nil
 }
