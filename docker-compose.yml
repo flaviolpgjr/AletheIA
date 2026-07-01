@@ -3,6 +3,8 @@ services:
     image: postgres:17
     container_name: aletheia_postgres
     restart: unless-stopped
+    env_file:
+      - ./backend/.env
     environment:
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_USER: ${DATABASE_USER}
@@ -11,6 +13,21 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aletheia_backend
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?sslmode=disable
+    ports:
+      - "8080:8080"
 
 volumes:
   postgres_data:
