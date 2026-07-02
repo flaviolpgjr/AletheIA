@@ -3,8 +3,6 @@ services:
     image: postgres:17
     container_name: aletheia_postgres
     restart: unless-stopped
-    env_file:
-      - ./backend/.env
     environment:
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_USER: ${DATABASE_USER}
@@ -22,12 +20,29 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres
-    env_file:
-      - ./backend/.env
     environment:
       DATABASE_URL: postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?sslmode=disable
+      LLM_PROVIDER: ${LLM_PROVIDER}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
     ports:
       - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY}
+    container_name: aletheia_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
 
 volumes:
   postgres_data:
